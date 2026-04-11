@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timesheet Status Redesign — 4 Variants</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #fff;
+    --border: #e5e5e5;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-muted: #a0a0a0;
+    --accent-green: #16a34a;
+    --accent-green-bg: #f0fdf4;
+    --accent-yellow: #ca8a04;
+    --accent-yellow-bg: #fefce8;
+    --accent-orange: #ea580c;
+    --accent-orange-bg: #fff7ed;
+    --accent-red: #dc2626;
+    --accent-red-bg: #fef2f2;
+    --accent-blue: #2563eb;
+    --accent-blue-bg: #eff6ff;
+    --released-opacity: 0.45;
+    --radius: 8px;
+    --radius-sm: 4px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  /* ─── Variant Switcher ─── */
+  .variant-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #1a1a1a;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .variant-nav h1 {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 24px;
+    white-space: nowrap;
+    padding: 14px 0;
+  }
+  .variant-tab {
+    padding: 14px 18px;
+    color: #999;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .variant-tab:hover { color: #ccc; }
+  .variant-tab.active {
+    color: #fff;
+    border-bottom-color: #fff;
+  }
+
+  /* ─── Shared Layout ─── */
+  .variant-panel { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+  .variant-panel.active { display: block; }
+
+  .variant-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .variant-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .variant-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  /* ─── Page Header ─── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .page-date h2 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .page-date span {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .page-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+    border-color: var(--accent-blue);
+  }
+  .btn-release {
+    background: var(--accent-green);
+    color: #fff;
+    border-color: var(--accent-green);
+  }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* ─── Matter Card ─── */
+  .matter-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .matter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .matter-name {
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .matter-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .matter-client {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* ─── Entry Row ─── */
+  .entry-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f0f0f0;
+    gap: 12px;
+    transition: opacity 0.2s;
+  }
+  .entry-row:last-child { border-bottom: none; }
+
+  .entry-indicator {
+    width: 4px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .entry-indicator.ready { background: var(--accent-yellow); }
+  .entry-indicator.released { background: var(--accent-green); }
+  .entry-indicator.error { background: var(--accent-orange); }
+  .entry-indicator.rejected { background: var(--accent-red); }
+
+  .entry-content { flex: 1; min-width: 0; }
+  .entry-title {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .entry-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #f3f4f6;
+    color: var(--text-secondary);
+  }
+
+  .entry-hours {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  /* ─── Status Badge ─── */
+  .status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .status-badge.ready {
+    background: var(--accent-yellow-bg);
+    color: var(--accent-yellow);
+    border: 1px solid #fde68a;
+  }
+  .status-badge.released {
+    background: var(--accent-green-bg);
+    color: var(--accent-green);
+    border: 1px solid #bbf7d0;
+  }
+  .status-badge.error {
+    background: var(--accent-orange-bg);
+    color: var(--accent-orange);
+    border: 1px solid #fed7aa;
+  }
+  .status-badge.rejected {
+    background: var(--accent-red-bg);
+    color: var(--accent-red);
+    border: 1px solid #fecaca;
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .status-dot.ready { background: var(--accent-yellow); }
+  .status-dot.released { background: var(--accent-green); }
+  .status-dot.error { background: var(--accent-orange); }
+  .status-dot.rejected { background: var(--accent-red); }
+
+  /* ═══════════════════════════════════════
+     VARIANT A: De-emphasis + Badges
+     ═══════════════════════════════════════ */
+  .v-a .entry-row.is-released {
+    opacity: var(--released-opacity);
+  }
+  .v-a .entry-row.is-released:hover {
+    opacity: 0.75;
+  }
+  .v-a .entry-row.is-ready {
+    background: #fffef5;
+  }
+  .v-a .entry-row.is-error {
+    background: #fffbf7;
+  }
+
+  /* ═══════════════════════════════════════
+     VARIANT B: Status Sub-groups
+     ═══════════════════════════════════════ */
+  .v-b .status-section-header {
+    padding: 8px 18px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .v-b .status-section-header.needs-action {
+    background: #fffef5;
+    color: var(--accent-yellow);
+    border-bottom: 1px solid #fde68a;
+  }
+  .v-b .status-section-header.has-errors {
+    background: var(--accent-orange-bg);
+    color: var(--accent-orange);
+    border-bottom: 1px solid #fed7aa;
+  }
+  .v-b .status-section-header.done {
+    background: #f9fafb;
+    color: var(--text-muted);
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .v-b .section-count {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.06);
+  }
+  .v-b .released-section .entry-row {
+    opacity: var(--released-opacity);
+  }
+  .v-b .released-section .entry-row:hover {
+    opacity: 0.75;
+  }
+
+  /* ═══════════════════════════════════════
+     VARIANT C: Action Bar + Collapse
+     ═══════════════════════════════════════ */
+  .action-bar {
+    background: var(--accent-yellow-bg);
+    border: 1px solid #fde68a;
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .action-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .action-bar-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fde68a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .action-bar-text h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #92400e;
+  }
+  .action-bar-text p {
+    font-size: 12px;
+    color: #a16207;
+  }
+  .error-bar {
+    background: var(--accent-orange-bg);
+    border-color: #fed7aa;
+  }
+  .error-bar .action-bar-icon {
+    background: #fed7aa;
+  }
+  .error-bar .action-bar-text h3 { color: #9a3412; }
+  .error-bar .action-bar-text p { color: #c2410c; }
+
+  .v-c .matter-header {
+    position: relative;
+  }
+  .v-c .matter-status-summary {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .matter-status-pip {
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .matter-status-pip.ready { color: var(--accent-yellow); }
+  .matter-status-pip.error { color: var(--accent-orange); }
+  .matter-status-pip.released { color: var(--text-muted); }
+
+  .v-c .released-collapse {
+    padding: 10px 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px dashed #e5e5e5;
+  }
+  .v-c .released-collapse:hover {
+    color: var(--text-secondary);
+    background: #fafafa;
+  }
+  .v-c .released-collapse .chevron {
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .v-c .released-collapse.expanded .chevron {
+    transform: rotate(90deg);
+  }
+
+  /* ═══════════════════════════════════════
+     VARIANT D: Tabs + Focus Mode
+     ═══════════════════════════════════════ */
+  .view-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 20px;
+  }
+  .view-tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .view-tab:hover { color: var(--text-secondary); }
+  .view-tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--text-primary);
+  }
+  .tab-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: var(--text-secondary);
+  }
+  .view-tab.active .tab-count.attention {
+    background: var(--accent-yellow-bg);
+    color: var(--accent-yellow);
+  }
+  .view-tab.active .tab-count.errors {
+    background: var(--accent-orange-bg);
+    color: var(--accent-orange);
+  }
+
+  .v-d .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .v-d .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+
+  /* ─── Release Day Badge ─── */
+  .release-day-badge {
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+
+  /* ─── Tradeoffs Section ─── */
+  .tradeoffs {
+    margin-top: 32px;
+    padding: 20px;
+    background: #f9fafb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .tradeoffs h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+  .tradeoff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .tradeoff-item {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  .tradeoff-item strong {
+    color: var(--text-primary);
+    display: block;
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 32px 0;
+  }
+
+  /* ─── Checkbox ─── */
+  .entry-check {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 3px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+  }
+  .entry-check.checked {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #fff;
+    font-size: 10px;
+  }
+
+  /* ─── Add entry row ─── */
+  .add-entry {
+    padding: 10px 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .add-entry:hover { color: var(--text-secondary); }
+
+  /* ─── Left border on matter cards ─── */
+  .matter-card.has-action {
+    border-left: 3px solid var(--accent-yellow);
+  }
+  .matter-card.has-error {
+    border-left: 3px solid var(--accent-orange);
+  }
+  .matter-card.all-released {
+    border-left: 3px solid var(--accent-green);
+    opacity: 0.65;
+  }
+  .matter-card.all-released:hover {
+    opacity: 0.85;
+  }
+
+  /* ─── Progress Bar ─── */
+  .progress-bar {
+    display: flex;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+    width: 80px;
+    background: #f0f0f0;
+  }
+  .progress-segment {
+    height: 100%;
+  }
+  .progress-segment.released { background: var(--accent-green); }
+  .progress-segment.ready { background: var(--accent-yellow); }
+  .progress-segment.error { background: var(--accent-orange); }
+</style>
+</head>
+<body>
+
+<!-- ─── Navigation ─── -->
+<nav class="variant-nav">
+  <h1>Timesheet Status Redesign</h1>
+  <div class="variant-tab active" onclick="showVariant('a')">A: De-emphasis</div>
+  <div class="variant-tab" onclick="showVariant('b')">B: Sub-groups</div>
+  <div class="variant-tab" onclick="showVariant('c')">C: Action Bar</div>
+  <div class="variant-tab" onclick="showVariant('d')">D: Focus Tabs</div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     VARIANT A: De-emphasis + Text Badges
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="variant-a" class="variant-panel active v-a">
+  <div class="variant-label">Variant A</div>
+  <div class="variant-title">Visual De-emphasis + Text Status Badges</div>
+  <div class="variant-desc">
+    The lightest-touch change: released entries fade to ~45% opacity so they stop competing for attention.
+    Status badges use text labels (not just colored dots) so meaning is unambiguous.
+    Entries needing action get a subtle warm background tint.
+  </div>
+
+  <div class="page-header">
+    <div class="page-date">
+      <span>Wednesday</span>
+      <h2>March 18</h2>
+    </div>
+    <div class="page-actions">
+      <span class="release-day-badge">Release Day (3)</span>
+      <button class="btn">⊕ Create Entry</button>
+    </div>
+  </div>
+
+  <!-- Matter 1 -->
+  <div class="matter-card">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Albright v. Jameson</div>
+        <div class="matter-client">Vanessa Albright · 2021.49928</div>
+      </div>
+      <div class="matter-meta">
+        <div class="progress-bar" title="1 of 2 released">
+          <div class="progress-segment released" style="width:50%"></div>
+          <div class="progress-segment ready" style="width:50%"></div>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="entry-row is-ready">
+      <div class="entry-indicator ready"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Mountain View Deal.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge ready"><span class="status-dot ready"></span> Ready to release</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="entry-row is-released">
+      <div class="entry-indicator released"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Mountain View Deal.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 2 -->
+  <div class="matter-card">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Avalon & Sons Trust</div>
+        <div class="matter-client">Avalon Estate Foundation · 4123.34133</div>
+      </div>
+      <div class="matter-meta">
+        <div class="progress-bar" title="1 of 2 released">
+          <div class="progress-segment released" style="width:50%"></div>
+          <div class="progress-segment error" style="width:50%"></div>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="entry-row is-error">
+      <div class="entry-indicator error"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag" style="border:1px dashed var(--accent-orange);color:var(--accent-orange);background:var(--accent-orange-bg)">Activity</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge error"><span class="status-dot error"></span> Validation error</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="entry-row is-released">
+      <div class="entry-indicator released"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 3 — all released -->
+  <div class="matter-card" style="opacity: 0.5;">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Riverdale Hospital System - Regulatory Compliance</div>
+        <div class="matter-client">Riverdale Healthcare Holdings · 3924.67512</div>
+      </div>
+      <div class="matter-meta">
+        <div class="progress-bar">
+          <div class="progress-segment released" style="width:100%"></div>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="entry-row is-released">
+      <div class="entry-indicator released"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on RHS Term Sheet.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span>
+        </div>
+      </div>
+      <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="entry-row is-released">
+      <div class="entry-indicator released"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on RHS Term Sheet.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span>
+        </div>
+      </div>
+      <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+  </div>
+
+  <div class="tradeoffs">
+    <h3>Tradeoffs</h3>
+    <div class="tradeoff-grid">
+      <div class="tradeoff-item">
+        <strong>✓ Pros</strong>
+        Lowest implementation cost. Doesn't change page architecture or sorting. Released items naturally fade from view while staying accessible on hover. Text badges eliminate color-only interpretation.
+      </div>
+      <div class="tradeoff-item">
+        <strong>✗ Cons</strong>
+        Still requires users to scan the full list — no aggregation of "what needs my attention." If many entries are ready-to-release across many matters, users must scroll through everything. Progress bar helps but is small.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     VARIANT B: Status Sub-groups Within Matters
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="variant-b" class="variant-panel v-b">
+  <div class="variant-label">Variant B</div>
+  <div class="variant-title">Status Sub-groups Within Matters</div>
+  <div class="variant-desc">
+    Within each matter, entries are grouped by status: errors first, then ready-to-release, then released (collapsed by default).
+    Each sub-group has a labeled header so the structure is immediately scannable.
+    This preserves matter grouping while adding status hierarchy inside.
+  </div>
+
+  <div class="page-header">
+    <div class="page-date">
+      <span>Wednesday</span>
+      <h2>March 18</h2>
+    </div>
+    <div class="page-actions">
+      <span class="release-day-badge">Release Day (3)</span>
+      <button class="btn">⊕ Create Entry</button>
+    </div>
+  </div>
+
+  <!-- Matter 1 -->
+  <div class="matter-card">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Albright v. Jameson</div>
+        <div class="matter-client">Vanessa Albright · 2021.49928</div>
+      </div>
+      <div class="matter-meta">
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="status-section-header needs-action">
+      <span>⏳ Ready to release</span>
+      <span class="section-count">1 entry · 1.0 hrs</span>
+    </div>
+    <div class="entry-row">
+      <div class="entry-indicator ready"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Mountain View Deal.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-release">Release</button>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="status-section-header done" onclick="this.nextElementSibling.classList.toggle('released-section-hidden')">
+      <span>✓ Released</span>
+      <span class="section-count">1 entry · 1.0 hrs ▾</span>
+    </div>
+    <div class="released-section">
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Mountain View Deal.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 2 -->
+  <div class="matter-card">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Avalon & Sons Trust</div>
+        <div class="matter-client">Avalon Estate Foundation · 4123.34133</div>
+      </div>
+      <div class="matter-meta">
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="status-section-header has-errors">
+      <span>⚠ Needs attention</span>
+      <span class="section-count">1 entry · 1.0 hrs</span>
+    </div>
+    <div class="entry-row">
+      <div class="entry-indicator error"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag" style="border:1px dashed var(--accent-orange);color:var(--accent-orange);background:var(--accent-orange-bg)">Activity</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge error"><span class="status-dot error"></span> Validation error</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="status-section-header done" onclick="this.nextElementSibling.classList.toggle('released-section-hidden')">
+      <span>✓ Released</span>
+      <span class="section-count">1 entry · 1.0 hrs ▾</span>
+    </div>
+    <div class="released-section">
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 3 — all released -->
+  <div class="matter-card" style="opacity:0.6">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Riverdale Hospital System - Regulatory Compliance</div>
+        <div class="matter-client">Riverdale Healthcare Holdings · 3924.67512</div>
+      </div>
+      <div class="matter-meta">
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="status-section-header done">
+      <span>✓ All released</span>
+      <span class="section-count">2 entries · 2.0 hrs</span>
+    </div>
+  </div>
+
+  <div class="tradeoffs">
+    <h3>Tradeoffs</h3>
+    <div class="tradeoff-grid">
+      <div class="tradeoff-item">
+        <strong>✓ Pros</strong>
+        Clear hierarchy within each matter — errors surface first, then actionable items, then completed. Released entries can be collapsed. Inline "Release" buttons reduce friction. Fully-released matters can be collapsed to one line.
+      </div>
+      <div class="tradeoff-item">
+        <strong>✗ Cons</strong>
+        Adds visual complexity within each matter card. May conflict with user's custom entry ordering (duration, etc.) since status grouping overrides it. More vertical space per matter when multiple status groups exist.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     VARIANT C: Action Bar + Progressive Disclosure
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="variant-c" class="variant-panel v-c">
+  <div class="variant-label">Variant C</div>
+  <div class="variant-title">Action Summary Bar + Progressive Disclosure</div>
+  <div class="variant-desc">
+    A persistent summary bar surfaces what needs attention without requiring any scanning.
+    Released entries are collapsed into a "show N released" toggle at the bottom of each matter.
+    Matter cards get a left-border accent indicating their aggregate status.
+  </div>
+
+  <div class="page-header">
+    <div class="page-date">
+      <span>Wednesday</span>
+      <h2>March 18</h2>
+    </div>
+    <div class="page-actions">
+      <button class="btn">⊕ Create Entry</button>
+    </div>
+  </div>
+
+  <!-- Action bars -->
+  <div class="action-bar error-bar">
+    <div class="action-bar-content">
+      <div class="action-bar-icon">⚠</div>
+      <div class="action-bar-text">
+        <h3>1 entry has validation errors</h3>
+        <p>Fix the "Activity" code on Avalon & Sons Trust to continue</p>
+      </div>
+    </div>
+    <button class="btn btn-sm" style="border-color:#fed7aa;color:var(--accent-orange)">View errors</button>
+  </div>
+
+  <div class="action-bar">
+    <div class="action-bar-content">
+      <div class="action-bar-icon">⏳</div>
+      <div class="action-bar-text">
+        <h3>1 entry ready to release (1.0 hrs)</h3>
+        <p>Albright v. Jameson — Correspondence on Mountain View Deal</p>
+      </div>
+    </div>
+    <button class="btn btn-sm btn-release">Release all</button>
+  </div>
+
+  <!-- Matter 1 — has action -->
+  <div class="matter-card has-action">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Albright v. Jameson</div>
+        <div class="matter-client">Vanessa Albright · 2021.49928</div>
+      </div>
+      <div class="matter-meta">
+        <div class="matter-status-summary">
+          <span class="matter-status-pip ready">● 1 ready</span>
+          <span class="matter-status-pip released">● 1 released</span>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="entry-row" style="background:#fffef5">
+      <div class="entry-indicator ready"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Mountain View Deal.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-release">Release</button>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="released-collapse" onclick="toggleCollapse(this)">
+      <span class="chevron">▸</span> 1 released entry (1.0 hrs)
+    </div>
+    <div class="collapsed-entries" style="display:none">
+      <div class="entry-row" style="opacity:0.45">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Mountain View Deal.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 2 — has error -->
+  <div class="matter-card has-error">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Avalon & Sons Trust</div>
+        <div class="matter-client">Avalon Estate Foundation · 4123.34133</div>
+      </div>
+      <div class="matter-meta">
+        <div class="matter-status-summary">
+          <span class="matter-status-pip error">● 1 error</span>
+          <span class="matter-status-pip released">● 1 released</span>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+    <div class="entry-row" style="background:#fffbf7">
+      <div class="entry-indicator error"></div>
+      <div class="entry-content">
+        <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+        <div class="entry-tags">
+          <span class="tag">L110</span><span class="tag">Working</span><span class="tag" style="border:1px dashed var(--accent-orange);color:var(--accent-orange);background:var(--accent-orange-bg)">Activity</span><span class="tag">CA</span>
+        </div>
+      </div>
+      <span class="status-badge error"><span class="status-dot error"></span> Validation error</span>
+      <div class="entry-hours">1.0</div>
+    </div>
+    <div class="released-collapse" onclick="toggleCollapse(this)">
+      <span class="chevron">▸</span> 1 released entry (1.0 hrs)
+    </div>
+    <div class="collapsed-entries" style="display:none">
+      <div class="entry-row" style="opacity:0.45">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+    <div class="add-entry">+ Add entry</div>
+  </div>
+
+  <!-- Matter 3 — all released, fully collapsed -->
+  <div class="matter-card all-released">
+    <div class="matter-header">
+      <div>
+        <div class="matter-name">Riverdale Hospital System - Regulatory Compliance</div>
+        <div class="matter-client">Riverdale Healthcare Holdings · 3924.67512</div>
+      </div>
+      <div class="matter-meta">
+        <div class="matter-status-summary">
+          <span class="matter-status-pip released">✓ All released</span>
+        </div>
+        <span>2.0 hrs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tradeoffs">
+    <h3>Tradeoffs</h3>
+    <div class="tradeoff-grid">
+      <div class="tradeoff-item">
+        <strong>✓ Pros</strong>
+        Answers "what do I need to do?" instantly — no scanning required. Released entries are hidden by default, radically reducing visual noise. Left-border accents make matter-level status glanceable. "Release all" in the summary bar enables one-click batch action.
+      </div>
+      <div class="tradeoff-item">
+        <strong>✗ Cons</strong>
+        Summary bar takes vertical space and could feel redundant with few entries. Collapsed released entries may frustrate users who want to review what they've released. Requires maintaining both summary bar and per-matter status.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     VARIANT D: Focus Tabs
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="variant-d" class="variant-panel v-d">
+  <div class="variant-label">Variant D</div>
+  <div class="variant-title">Focus Tabs — Separate Views by Status</div>
+  <div class="variant-desc">
+    Replace the filter dropdown with persistent tabs that split the timesheet into focused views.
+    "Needs Attention" becomes the default landing tab, showing only entries that require action.
+    This is the most aggressive restructuring — it changes the mental model from "list of everything" to "show me what matters."
+  </div>
+
+  <div class="page-header">
+    <div class="page-date">
+      <span>Wednesday</span>
+      <h2>March 18</h2>
+    </div>
+    <div class="page-actions">
+      <span class="release-day-badge">Release Day (3)</span>
+      <button class="btn">⊕ Create Entry</button>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <div class="view-tab active" onclick="showTab(this, 'tab-attention')">
+      Needs attention
+      <span class="tab-count attention">2</span>
+    </div>
+    <div class="view-tab" onclick="showTab(this, 'tab-released')">
+      Released
+      <span class="tab-count">3</span>
+    </div>
+    <div class="view-tab" onclick="showTab(this, 'tab-all')">
+      All entries
+      <span class="tab-count">5</span>
+    </div>
+  </div>
+
+  <!-- Tab: Needs Attention -->
+  <div id="tab-attention" class="tab-content" style="display:block">
+    <div class="matter-card has-action">
+      <div class="matter-header">
+        <div>
+          <div class="matter-name">Albright v. Jameson</div>
+          <div class="matter-client">Vanessa Albright · 2021.49928</div>
+        </div>
+        <div class="matter-meta">
+          <button class="btn btn-sm btn-release">Release 1 entry</button>
+        </div>
+      </div>
+      <div class="entry-row" style="background:#fffef5">
+        <div class="entry-check"></div>
+        <div class="entry-indicator ready"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Mountain View Deal.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge ready"><span class="status-dot ready"></span> Ready to release</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+
+    <div class="matter-card has-error">
+      <div class="matter-header">
+        <div>
+          <div class="matter-name">Avalon & Sons Trust</div>
+          <div class="matter-client">Avalon Estate Foundation · 4123.34133</div>
+        </div>
+        <div class="matter-meta">
+          <span style="font-size:12px;color:var(--accent-orange);font-weight:600">1 error to fix</span>
+        </div>
+      </div>
+      <div class="entry-row" style="background:#fffbf7">
+        <div class="entry-check"></div>
+        <div class="entry-indicator error"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag" style="border:1px dashed var(--accent-orange);color:var(--accent-orange);background:var(--accent-orange-bg)">Activity</span><span class="tag">CA</span>
+          </div>
+        </div>
+        <span class="status-badge error"><span class="status-dot error"></span> Validation error</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Released -->
+  <div id="tab-released" class="tab-content" style="display:none">
+    <div class="matter-card">
+      <div class="matter-header">
+        <div>
+          <div class="matter-name">Albright v. Jameson</div>
+          <div class="matter-client">Vanessa Albright · 2021.49928</div>
+        </div>
+        <div class="matter-meta"><span>1.0 hrs</span></div>
+      </div>
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Mountain View Deal.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+
+    <div class="matter-card">
+      <div class="matter-header">
+        <div>
+          <div class="matter-name">Avalon & Sons Trust</div>
+          <div class="matter-client">Avalon Estate Foundation · 4123.34133</div>
+        </div>
+        <div class="matter-meta"><span>1.0 hrs</span></div>
+      </div>
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on Avalon Trust Terms with J. Mahoney.</div>
+          <div class="entry-tags">
+            <span class="tag">L110</span><span class="tag">Working</span><span class="tag">Action</span>
+          </div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+
+    <div class="matter-card">
+      <div class="matter-header">
+        <div>
+          <div class="matter-name">Riverdale Hospital System - Regulatory Compliance</div>
+          <div class="matter-client">Riverdale Healthcare Holdings · 3924.67512</div>
+        </div>
+        <div class="matter-meta"><span>2.0 hrs</span></div>
+      </div>
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on RHS Term Sheet.</div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+      <div class="entry-row">
+        <div class="entry-indicator released"></div>
+        <div class="entry-content">
+          <div class="entry-title">Correspondence on RHS Term Sheet.</div>
+        </div>
+        <span class="status-badge released"><span class="status-dot released"></span> Released</span>
+        <div class="entry-hours">1.0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: All -->
+  <div id="tab-all" class="tab-content" style="display:none">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <p>This tab shows all entries combined — same as the current default view.<br>The key insight is making "Needs attention" the default landing state.</p>
+    </div>
+  </div>
+
+  <div class="tradeoffs">
+    <h3>Tradeoffs</h3>
+    <div class="tradeoff-grid">
+      <div class="tradeoff-item">
+        <strong>✓ Pros</strong>
+        Most radical reduction of noise — the default view ONLY shows what needs action. Tab counts give an instant dashboard. Fully-released matters don't appear at all in the action tab. Users can still access everything via "All entries."
+      </div>
+      <div class="tradeoff-item">
+        <strong>✗ Cons</strong>
+        Biggest departure from current UX — users may feel disoriented. Entries appear split across tabs, so same matter can show in multiple tabs. Conflicts with current sort/group flexibility — may need to restrict some options. Doesn't show full-picture context by default.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+function showVariant(id) {
+  document.querySelectorAll('.variant-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('variant-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function toggleCollapse(el) {
+  el.classList.toggle('expanded');
+  const entries = el.nextElementSibling;
+  entries.style.display = entries.style.display === 'none' ? 'block' : 'none';
+}
+
+function showTab(tabEl, contentId) {
+  tabEl.closest('.v-d').querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  tabEl.closest('.v-d').querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  document.getElementById(contentId).style.display = 'block';
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Filters — Overflow Variants</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8f8f8;
+    --chip-bg: #ffffff;
+    --chip-border: #e0e0e0;
+    --chip-hover: #f5f5f5;
+    --text: #1a1a1a;
+    --text-muted: #777;
+    --accent: #6d5acd;
+    --accent-dim: rgba(109,90,205,0.08);
+    --accent-hover: rgba(109,90,205,0.14);
+    --green: #16a34a;
+    --blue: #2563eb;
+    --pink: #db2777;
+    --teal: #0d9488;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+
+  .variant {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid #e8e8e8;
+  }
+  .variant-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .variant-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .variant-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .tag-recommended { background: rgba(22,163,74,0.1); color: var(--green); }
+  .tag-alternative { background: rgba(37,99,235,0.1); color: var(--blue); }
+  .tag-simple { background: rgba(219,39,119,0.1); color: var(--pink); }
+  .tag-mobile { background: rgba(13,148,136,0.1); color: var(--teal); }
+
+  .variant-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  .demo-box {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .section-label svg { width: 14px; height: 14px; }
+  .section-label .caret {
+    width: 16px;
+    height: 16px;
+    margin-left: -2px;
+  }
+
+  /* ============ CHIP STYLES (shared) ============ */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+    user-select: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .chip:hover {
+    background: var(--chip-hover);
+    border-color: #ccc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .chip-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .chip-name { font-weight: 500; color: var(--text); }
+  .chip-sub { color: var(--text-muted); font-size: 12px; }
+
+  .more-chip {
+    background: var(--accent-dim);
+    border-color: rgba(109,90,205,0.25);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: none;
+  }
+  .more-chip:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent);
+    box-shadow: none;
+  }
+
+  /* ============ VARIANT 1: +N Counter ============ */
+  .v1-container {
+    position: relative;
+    width: 100%;
+  }
+  .v1-row {
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+    max-height: 42px;
+    align-items: center;
+  }
+
+  /* ============ VARIANT 2: Fade + Scroll ============ */
+  .v2-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  .v2-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .v2-row::-webkit-scrollbar { display: none; }
+  .v2-fade-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: linear-gradient(to right, transparent, #fff);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .v2-fade-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 40px;
+    background: linear-gradient(to left, transparent, #fff);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  /* Arrow buttons for desktop scroll */
+  .v2-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: opacity 0.2s, box-shadow 0.15s;
+    color: var(--text);
+  }
+  .v2-arrow:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.18); }
+  .v2-arrow-left { left: -8px; }
+  .v2-arrow-right { right: -8px; }
+
+  /* ============ VARIANT 3: Inline Expand ============ */
+  .v3-outer {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .v3-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .v3-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 14px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(109,90,205,0.25);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .v3-toggle:hover {
+    background: var(--accent-hover);
+  }
+  .v3-toggle svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.35s;
+  }
+  .v3-toggle.is-expanded svg {
+    transform: rotate(180deg);
+  }
+
+  /* ============ VARIANT 4: "View all" text link ============ */
+  .v4-container {
+    position: relative;
+    width: 100%;
+  }
+  .v4-row {
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+    max-height: 42px;
+    align-items: center;
+  }
+  .v4-link {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+    padding: 8px 4px;
+  }
+  .v4-link:hover {
+    border-bottom-color: var(--accent);
+  }
+
+  /* ============ VARIANT 5: Inline chip toggle ============ */
+  .v5-container {
+    position: relative;
+    width: 100%;
+  }
+  .v5-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .v5-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(109,90,205,0.25);
+    border-radius: var(--radius);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    user-select: none;
+    transition: background 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .v5-more:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent);
+  }
+  .v5-more svg {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.3s;
+  }
+  .v5-more.is-expanded svg {
+    transform: rotate(180deg);
+  }
+
+  /* ============ VARIANT 6: Toggle in header ============ */
+  .v6-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .v6-toggle {
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 2px 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .v6-toggle:hover {
+    border-bottom-color: var(--accent);
+  }
+  .v6-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============ VARIANT 6.1: Toggle inline with label ============ */
+  .v6-1-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .v6-1-toggle {
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 2px 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .v6-1-toggle:hover {
+    border-bottom-color: var(--accent);
+  }
+  .v6-1-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============ VARIANT 7: Hover expand ============ */
+  .v7-box {
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .v7-box.is-hovered {
+    background: #fafaff;
+    box-shadow: 0 0 0 1px rgba(109,90,205,0.08), 0 4px 16px rgba(109,90,205,0.06);
+  }
+  .v7-container {
+    position: relative;
+    width: 100%;
+  }
+  .v7-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    overflow: hidden;
+    /* Expanding: slow ease-out spring feel */
+    transition: max-height 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .v7-row.is-collapsing {
+    /* Collapsing: slightly faster, snappier */
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 1, 1);
+  }
+  .v7-hint-overlay {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 2px 0 24px;
+    background: linear-gradient(to right, transparent, #fff 16px);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 400;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .v7-hint-overlay.is-hidden {
+    opacity: 0;
+  }
+  /* Chips that are on row 2+ fade/slide in when revealed */
+  .v7-row .chip {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .v7-row.is-collapsing .chip {
+    transition: none;
+  }
+
+  /* ============ Popover ============ */
+  .popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: rgba(0,0,0,0.08);
+  }
+  .popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 10px;
+    z-index: 100;
+    min-width: 280px;
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    animation: popIn 0.2s ease-out;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .popover .chip { font-size: 12px; padding: 6px 10px; }
+
+  /* ============ Controls ============ */
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    padding: 16px 20px;
+    border-radius: 10px;
+    border: 1px solid #e8e8e8;
+  }
+  .controls label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .controls input[type="range"] {
+    width: 200px;
+    accent-color: var(--accent);
+  }
+  .count-display {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 90px;
+  }
+  .width-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ============ Analysis ============ */
+  .analysis {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 32px;
+    border: 1px solid #e8e8e8;
+  }
+  .analysis h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .analysis-item {
+    font-size: 12px;
+  }
+  .analysis-item strong {
+    color: #444;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .analysis-item span {
+    color: var(--text-muted);
+  }
+
+  .pro-con {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: #555;
+  }
+  .pro-con div { flex: 1; }
+  .pro-con .label { font-weight: 600; margin-bottom: 4px; }
+  .pro { color: var(--green); }
+  .con { color: var(--pink); }
+</style>
+</head>
+<body>
+
+<h1>Smart Filters — Overflow Pattern Exploration</h1>
+<p class="subtitle">4 variants for cropping a variable-length chip list to one line. Use the sliders to stress-test each.</p>
+
+<div class="controls">
+  <label>Items:</label>
+  <input type="range" id="itemSlider" min="1" max="20" value="12">
+  <span class="count-display" id="countDisplay">12 items</span>
+  <div class="width-control">
+    <label>Container width:</label>
+    <input type="range" id="widthSlider" min="40" max="100" value="100">
+    <span class="count-display" id="widthDisplay">100%</span>
+  </div>
+</div>
+
+<!-- ===== VARIANT 1 ===== -->
+<div class="variant" id="variant1">
+  <div class="variant-header">
+    <div class="variant-title">Variant 1 — "+N more" Counter Chip with Popover</div>
+  </div>
+  <p class="variant-desc">
+    JS measures which chips fit, hides the rest, appends a "+N more" chip.
+    Click it to open a popover showing all hidden items. Click backdrop or the chip again to close.
+    Gmail / Figma pattern.
+  </p>
+  <div class="demo-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v1-container" id="v1-container">
+      <div class="v1-row" id="v1-row"></div>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>Clear count of hidden items. Inline access — user picks from popover without leaving context. Familiar pattern.</div>
+    <div><div class="label con">Trade-offs</div>Requires JS measurement + ResizeObserver. "+N" chip width varies, needs reserved space.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 2 ===== -->
+<div class="variant" id="variant2">
+  <div class="variant-header">
+    <div class="variant-title">Variant 2 — Horizontal Scroll with Arrow Buttons</div>
+  </div>
+  <p class="variant-desc">
+    All chips render in a scrollable row. Fade gradients + arrow buttons provide desktop scroll affordance.
+    Click arrows or use mousewheel/trackpad to scroll. Netflix / Spotify filter bar pattern.
+  </p>
+  <div class="demo-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v2-wrapper" id="v2-wrapper">
+    <div class="v2-fade-left" id="v2-fade-left"></div>
+    <div class="v2-row" id="v2-row"></div>
+    <div class="v2-fade-right" id="v2-fade-right"></div>
+    <button class="v2-arrow v2-arrow-left" id="v2-arrow-left" style="opacity:0;pointer-events:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <button class="v2-arrow v2-arrow-right" id="v2-arrow-right">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>All items reachable without popup. No items "hidden" — just offscreen. Arrows solve desktop discoverability.</div>
+    <div><div class="label con">Trade-offs</div>No count of total items. User must scroll to discover what's there. Fade can clip last visible chip's text.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 3 ===== -->
+<div class="variant" id="variant3">
+  <div class="variant-header">
+    <div class="variant-title">Variant 3 — Inline Expand / Collapse</div>
+  </div>
+  <p class="variant-desc">
+    Chips wrap naturally but container is height-locked to one row. Toggle chip expands to reveal
+    all rows with smooth animation, then collapses. Click the toggle to try it.
+  </p>
+  <div class="demo-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v3-outer" id="v3-outer">
+      <div class="v3-row" id="v3-row"></div>
+      <div class="v3-toggle" id="v3-toggle" style="display:none">
+        <span id="v3-toggle-text">+more</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>All items visible in-context. No popover or navigation. Smooth animation. Spatial layout shows groupings.</div>
+    <div><div class="label con">Trade-offs</div>Pushes content below downward. Multi-row may not fit visual language. Toggle must always be on first row.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 4 ===== -->
+<div class="variant" id="variant4">
+  <div class="variant-header">
+    <div class="variant-title">Variant 4 — "View all N" Link (JS-placed)</div>
+  </div>
+  <p class="variant-desc">
+    JS measures which chips fit, then places a "View all N" text link at the end of the visible chips.
+    The link could open a dedicated page or modal. Typographically clean.
+  </p>
+  <div class="demo-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v4-container" id="v4-container">
+      <div class="v4-row" id="v4-row"></div>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>Very clean. Link stands apart from chips visually. Shows total count. Simple to implement.</div>
+    <div><div class="label con">Trade-offs</div>Requires a destination (page/modal). Extra step to reach hidden items. Doesn't preview what's hidden.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 5 ===== -->
+<div class="variant" id="variant5">
+  <div class="variant-header">
+    <div class="variant-title">Variant 5 — Inline Chip Toggle (expand in place)</div>
+  </div>
+  <p class="variant-desc">
+    JS measures which chips fit on one row, places a "+N more" chip at the end (like V1), but clicking
+    it expands the container to show all wrapped rows (like V3). No popover, no page navigation. Click again to collapse.
+  </p>
+  <div class="demo-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v5-container" id="v5-container">
+      <div class="v5-row" id="v5-row"></div>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>"+N" chip is inline and feels native. Expand is in-context — no popover layering. Collapse returns to clean single row. Best of V1 + V3.</div>
+    <div><div class="label con">Trade-offs</div>Pushes content below when expanded. Requires JS measurement. Slightly more complex than pure popover.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 6 ===== -->
+<div class="variant" id="variant6">
+  <div class="variant-header">
+    <div class="variant-title">Variant 6 — Toggle in Section Header</div>
+  </div>
+  <p class="variant-desc">
+    The "show N more / show less" link lives next to the "Smart Filters" label, not inside the chip flow.
+    It stays anchored while the chip area expands below. Clean separation of control from content.
+  </p>
+  <div class="demo-box">
+    <div class="v6-header">
+      <div class="section-label" style="margin-bottom:0">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        Smart Filters
+      </div>
+      <a class="v6-toggle" id="v6-toggle" href="#" style="display:none"></a>
+    </div>
+    <div class="v6-row" id="v6-row"></div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>Toggle never moves — always in the same spot. Clean separation of label/action and content. Familiar "show more" pattern from feeds. Simplest mental model.</div>
+    <div><div class="label con">Trade-offs</div>Toggle is further from the hidden chips (Fitts's law). "Show 8 more" is less glanceable than a chip that says "+8 more" inline.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 6.1 ===== -->
+<div class="variant" id="variant6-1">
+  <div class="variant-header">
+    <div class="variant-title">Variant 6.1 — Toggle Inline with Label</div>
+  </div>
+  <p class="variant-desc">
+    Like V6, but the "show N more / show less" sits directly next to the label text — not pushed to the far right.
+    Keeps the toggle close to the label for a tighter visual grouping. The toggle stays put when chips expand.
+  </p>
+  <div class="demo-box">
+    <div class="v6-1-header">
+      <div class="section-label" style="margin-bottom:0">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        Smart Filters
+      </div>
+      <a class="v6-1-toggle" id="v6-1-toggle" href="#" style="display:none"></a>
+    </div>
+    <div class="v6-1-row" id="v6-1-row"></div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>Toggle is visually grouped with the label — reads as "Smart Filters · Show 8 more". Never moves. Tighter layout than V6's right-aligned link.</div>
+    <div><div class="label con">Trade-offs</div>At very long label names the toggle could crowd the text. Slightly less conventional than right-aligned actions.</div>
+  </div>
+</div>
+
+<!-- ===== VARIANT 7 ===== -->
+<div class="variant" id="variant7">
+  <div class="variant-header">
+    <div class="variant-title">Variant 7 — Hover to Expand</div>
+  </div>
+  <p class="variant-desc">
+    Collapsed state shows fitting chips + a "View all N →" text hint (like V4, but not clickable).
+    Hovering anywhere on the box smoothly expands to show all chips. Moving the cursor out collapses back.
+    Zero clicks needed to browse — pure hover intent.
+  </p>
+  <div class="demo-box v7-box" id="v7-box">
+    <div class="section-label">
+      <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      Smart Filters
+    </div>
+    <div class="v7-container" id="v7-container">
+      <div class="v7-row" id="v7-row"></div>
+      <div class="v7-hint-overlay" id="v7-hint"></div>
+    </div>
+  </div>
+  <div class="pro-con">
+    <div><div class="label pro">Strengths</div>Zero clicks to browse — just hover. Feels lightweight and explorable. Hint text communicates hidden count. Collapse is automatic on mouse-out.</div>
+    <div><div class="label con">Trade-offs</div>No hover on touch/mobile — needs a fallback. Can feel jumpy if user's cursor passes through unintentionally. Content below shifts on expand.</div>
+  </div>
+</div>
+
+<!-- ===== ANALYSIS ===== -->
+<div class="analysis">
+  <h3>Decision Framework — for a "pick a matter" interaction</h3>
+  <div class="analysis-grid">
+    <div class="analysis-item">
+      <strong>Best for quick selection from overflow →</strong>
+      <span>Variant 1. Popover keeps user in context, shows exactly what's hidden, one click to pick.</span>
+    </div>
+    <div class="analysis-item">
+      <strong>Best if all items should feel equally reachable →</strong>
+      <span>Variant 2. No hierarchy — scroll reveals everything, nothing is "hidden behind a click."</span>
+    </div>
+    <div class="analysis-item">
+      <strong>Best if scan-and-compare matters →</strong>
+      <span>Variant 3. Expanding shows all items at once so user can visually compare before picking.</span>
+    </div>
+    <div class="analysis-item">
+      <strong>Best if "Smart Filters" is secondary UI →</strong>
+      <span>Variant 4. Minimal footprint, defers to a full matters page for real selection.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_MATTERS = [
+  { name: "Design", sub: "EPD", color: "#8b5cf6" },
+  { name: "Meetings", sub: "Product | Retention", color: "#ec4899" },
+  { name: "Training & Support", sub: "Laurel Go To Market", color: "#10b981" },
+  { name: "Misc", sub: "Eng | Core", color: "#3b82f6" },
+  { name: "Test For Ey #1", sub: "Presentation Team", color: "#ec4899" },
+  { name: "Strategy", sub: "Company", color: "#14b8a6" },
+  { name: "Q1 Planning", sub: "Leadership", color: "#f59e0b" },
+  { name: "Onboarding", sub: "People Ops", color: "#8b5cf6" },
+  { name: "Bug Triage", sub: "Eng | Platform", color: "#ef4444" },
+  { name: "Investor Update", sub: "Finance", color: "#10b981" },
+  { name: "Design System", sub: "EPD | Design", color: "#3b82f6" },
+  { name: "Sprint Review", sub: "Product", color: "#f59e0b" },
+  { name: "Legal Review", sub: "Operations", color: "#ec4899" },
+  { name: "Partnerships", sub: "BD", color: "#14b8a6" },
+  { name: "Roadmap", sub: "Product | Strategy", color: "#8b5cf6" },
+  { name: "Customer Feedback", sub: "CX Team", color: "#10b981" },
+  { name: "Data Pipeline", sub: "Eng | Data", color: "#ef4444" },
+  { name: "Brand Refresh", sub: "Marketing", color: "#f59e0b" },
+  { name: "Security Audit", sub: "Eng | Infra", color: "#3b82f6" },
+  { name: "Board Prep", sub: "Executive", color: "#14b8a6" },
+];
+
+function makeChipHTML(item) {
+  return `<div class="chip" onclick="alert('Selected: ${item.name}')">
+    <div class="chip-icon" style="background:${item.color}15;color:${item.color}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+      </svg>
+    </div>
+    <span class="chip-name">${item.name}</span>
+    <span class="chip-sub">${item.sub}</span>
+  </div>`;
+}
+
+const slider = document.getElementById('itemSlider');
+const countDisplay = document.getElementById('countDisplay');
+const widthSlider = document.getElementById('widthSlider');
+const widthDisplay = document.getElementById('widthDisplay');
+
+// ========== VARIANT 1: +N Counter with working popover ==========
+let v1PopoverEl = null;
+let v1BackdropEl = null;
+
+function closeV1Popover() {
+  if (v1PopoverEl) { v1PopoverEl.remove(); v1PopoverEl = null; }
+  if (v1BackdropEl) { v1BackdropEl.remove(); v1BackdropEl = null; }
+}
+
+function renderV1(items) {
+  const container = document.getElementById('v1-container');
+  const row = document.getElementById('v1-row');
+  closeV1Popover();
+
+  // Render all to measure
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.maxHeight = 'none';
+  row.style.flexWrap = 'nowrap';
+
+  requestAnimationFrame(() => {
+    const containerWidth = container.offsetWidth;
+    const chips = Array.from(row.children);
+    const gap = 8;
+    const moreChipWidth = 95;
+    let totalWidth = 0;
+    let fitCount = 0;
+
+    for (let i = 0; i < chips.length; i++) {
+      const chipW = chips[i].offsetWidth + (i > 0 ? gap : 0);
+      const remaining = items.length - (i + 1);
+      const needsMore = remaining > 0;
+      const availableWidth = needsMore ? containerWidth - moreChipWidth - gap : containerWidth;
+
+      if (totalWidth + chipW <= availableWidth) {
+        totalWidth += chipW;
+        fitCount++;
+      } else {
+        break;
+      }
+    }
+
+    if (fitCount >= items.length) {
+      row.innerHTML = items.map(makeChipHTML).join('');
+    } else {
+      const visible = items.slice(0, fitCount);
+      const hiddenItems = items.slice(fitCount);
+      const hiddenCount = hiddenItems.length;
+
+      row.innerHTML = visible.map(makeChipHTML).join('') +
+        `<div class="chip more-chip" id="v1-more-btn">+${hiddenCount} more</div>`;
+
+      document.getElementById('v1-more-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // Toggle: if open, close
+        if (v1PopoverEl) {
+          closeV1Popover();
+          return;
+        }
+
+        // Backdrop (click to close)
+        const backdrop = document.createElement('div');
+        backdrop.className = 'popover-backdrop';
+        backdrop.addEventListener('click', closeV1Popover);
+        document.body.appendChild(backdrop);
+        v1BackdropEl = backdrop;
+
+        // Popover
+        const pop = document.createElement('div');
+        pop.className = 'popover';
+        pop.innerHTML = hiddenItems.map(makeChipHTML).join('');
+        pop.addEventListener('click', (e) => e.stopPropagation());
+
+        container.style.position = 'relative';
+        container.appendChild(pop);
+        v1PopoverEl = pop;
+      });
+    }
+
+    row.style.maxHeight = '42px';
+  });
+}
+
+// ========== VARIANT 2: Scroll + Fade + Arrow Buttons ==========
+function renderV2(items) {
+  const row = document.getElementById('v2-row');
+  row.innerHTML = items.map(makeChipHTML).join('');
+
+  const fadeRight = document.getElementById('v2-fade-right');
+  const fadeLeft = document.getElementById('v2-fade-left');
+  const arrowLeft = document.getElementById('v2-arrow-left');
+  const arrowRight = document.getElementById('v2-arrow-right');
+
+  function updateV2Arrows() {
+    const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+    const atStart = row.scrollLeft <= 4;
+
+    fadeRight.style.opacity = atEnd ? '0' : '1';
+    fadeLeft.style.opacity = atStart ? '0' : '1';
+
+    arrowRight.style.opacity = atEnd ? '0' : '1';
+    arrowRight.style.pointerEvents = atEnd ? 'none' : 'auto';
+    arrowLeft.style.opacity = atStart ? '0' : '1';
+    arrowLeft.style.pointerEvents = atStart ? 'none' : 'auto';
+  }
+
+  row.addEventListener('scroll', updateV2Arrows);
+
+  // Also support mousewheel horizontal scroll on desktop
+  row.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+      e.preventDefault();
+      row.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  arrowLeft.onclick = () => { row.scrollBy({ left: -200, behavior: 'smooth' }); };
+  arrowRight.onclick = () => { row.scrollBy({ left: 200, behavior: 'smooth' }); };
+
+  requestAnimationFrame(updateV2Arrows);
+}
+
+// ========== VARIANT 3: Inline Expand ==========
+let v3Expanded = false;
+
+function renderV3(items) {
+  const row = document.getElementById('v3-row');
+  const toggle = document.getElementById('v3-toggle');
+  const toggleText = document.getElementById('v3-toggle-text');
+  v3Expanded = false;
+  toggle.classList.remove('is-expanded');
+
+  // Render chips only (toggle is a sibling in the HTML, not inside the row)
+  row.innerHTML = items.map(makeChipHTML).join('');
+
+  // Temporarily unconstrain to measure natural wrapped height
+  row.style.maxHeight = 'none';
+  row.style.overflow = 'visible';
+
+  requestAnimationFrame(() => {
+    const oneRowHeight = row.querySelector('.chip') ? row.querySelector('.chip').offsetHeight + 2 : 42;
+    const naturalHeight = row.scrollHeight;
+    const overflows = naturalHeight > oneRowHeight + 4;
+
+    if (!overflows) {
+      // Everything fits in one row — hide toggle, no clipping needed
+      toggle.style.display = 'none';
+      row.style.maxHeight = oneRowHeight + 'px';
+      row.style.overflow = 'hidden';
+      return;
+    }
+
+    // Count how many chips are on row 2+
+    const rowTop = row.getBoundingClientRect().top;
+    const chips = Array.from(row.querySelectorAll('.chip'));
+    const hiddenCount = chips.filter(c => c.getBoundingClientRect().top > rowTop + oneRowHeight - 4).length;
+
+    // Collapse to one row
+    row.style.maxHeight = oneRowHeight + 'px';
+    row.style.overflow = 'hidden';
+
+    // Show toggle
+    toggle.style.display = 'inline-flex';
+    toggleText.textContent = `+${hiddenCount} more`;
+
+    // Store natural height for expand
+    row.dataset.naturalHeight = naturalHeight;
+    row.dataset.oneRowHeight = oneRowHeight;
+
+    toggle.onclick = () => {
+      v3Expanded = !v3Expanded;
+      toggle.classList.toggle('is-expanded', v3Expanded);
+
+      if (v3Expanded) {
+        row.style.maxHeight = row.dataset.naturalHeight + 'px';
+        row.style.overflow = 'visible';
+        toggleText.textContent = 'Show less';
+      } else {
+        row.style.overflow = 'hidden';
+        row.style.maxHeight = row.dataset.oneRowHeight + 'px';
+        toggleText.textContent = `+${hiddenCount} more`;
+      }
+    };
+  });
+}
+
+// ========== VARIANT 4: "View all" link (JS-placed) ==========
+function renderV4(items) {
+  const container = document.getElementById('v4-container');
+  const row = document.getElementById('v4-row');
+
+  // Render all to measure
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.maxHeight = 'none';
+  row.style.flexWrap = 'nowrap';
+
+  requestAnimationFrame(() => {
+    const containerWidth = container.offsetWidth;
+    const chips = Array.from(row.children);
+    const gap = 8;
+    const linkWidth = 100; // reserved for "View all N →"
+    let totalWidth = 0;
+    let fitCount = 0;
+    const allFit = chips.reduce((sum, c, i) => sum + c.offsetWidth + (i > 0 ? gap : 0), 0) <= containerWidth;
+
+    if (allFit) {
+      row.innerHTML = items.map(makeChipHTML).join('');
+      row.style.maxHeight = '42px';
+      return;
+    }
+
+    for (let i = 0; i < chips.length; i++) {
+      const chipW = chips[i].offsetWidth + (i > 0 ? gap : 0);
+      if (totalWidth + chipW <= containerWidth - linkWidth - gap) {
+        totalWidth += chipW;
+        fitCount++;
+      } else {
+        break;
+      }
+    }
+
+    row.innerHTML = items.slice(0, fitCount).map(makeChipHTML).join('') +
+      `<a class="v4-link" href="#" onclick="event.preventDefault(); alert('Navigate to full Matters list (${items.length} items)')">View all ${items.length} →</a>`;
+
+    row.style.maxHeight = '42px';
+  });
+}
+
+// ========== VARIANT 5: Inline chip that expands in place ==========
+let v5Expanded = false;
+
+function renderV5(items) {
+  const container = document.getElementById('v5-container');
+  const row = document.getElementById('v5-row');
+  v5Expanded = false;
+
+  // Step 1: render all chips nowrap to measure individual widths
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.maxHeight = 'none';
+  row.style.flexWrap = 'nowrap';
+  row.style.overflow = 'visible';
+
+  requestAnimationFrame(() => {
+    const containerWidth = container.offsetWidth;
+    const chips = Array.from(row.children);
+    const gap = 8;
+    const moreChipWidth = 110;
+
+    // Measure how many chips fit on row 1 (reserving space for toggle)
+    let totalWidth = 0;
+    let fitCount = 0;
+
+    for (let i = 0; i < chips.length; i++) {
+      const chipW = chips[i].offsetWidth + (i > 0 ? gap : 0);
+      const remaining = items.length - (i + 1);
+      const needsMore = remaining > 0;
+      const available = needsMore ? containerWidth - moreChipWidth - gap : containerWidth;
+
+      if (totalWidth + chipW <= available) {
+        totalWidth += chipW;
+        fitCount++;
+      } else {
+        break;
+      }
+    }
+
+    // If everything fits, just show them — no toggle needed
+    if (fitCount >= items.length) {
+      row.innerHTML = items.map(makeChipHTML).join('');
+      row.style.flexWrap = 'nowrap';
+      row.style.overflow = 'hidden';
+      row.style.maxHeight = '';
+      return;
+    }
+
+    const hiddenCount = items.length - fitCount;
+
+    // Step 2: COLLAPSED state — show only fitting chips + toggle on one row (nowrap)
+    function renderCollapsed() {
+      row.style.flexWrap = 'nowrap';
+      row.style.overflow = 'hidden';
+      row.style.maxHeight = '';
+      row.innerHTML = items.slice(0, fitCount).map(makeChipHTML).join('') +
+        `<a class="v4-link" id="v5-toggle" href="#" style="border-bottom:none">+${hiddenCount} more</a>`;
+      document.getElementById('v5-toggle').addEventListener('click', handleToggle);
+    }
+
+    // Step 3: EXPANDED state — show ALL chips wrapping + "show less" toggle
+    function renderExpanded() {
+      row.style.flexWrap = 'wrap';
+      row.style.overflow = 'visible';
+      row.style.maxHeight = 'none';
+      row.innerHTML = items.map(makeChipHTML).join('') +
+        `<a class="v4-link" id="v5-toggle" href="#" style="border-bottom:none">Show less</a>`;
+      document.getElementById('v5-toggle').addEventListener('click', handleToggle);
+    }
+
+    function handleToggle(e) {
+      e.stopPropagation();
+      v5Expanded = !v5Expanded;
+      if (v5Expanded) {
+        renderExpanded();
+      } else {
+        renderCollapsed();
+      }
+    }
+
+    // Start collapsed
+    renderCollapsed();
+  });
+}
+
+// ========== VARIANT 6: Toggle anchored in section header ==========
+let v6Expanded = false;
+
+function renderV6(items) {
+  const row = document.getElementById('v6-row');
+  const toggle = document.getElementById('v6-toggle');
+  v6Expanded = false;
+
+  // Render all chips in nowrap to measure
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.maxHeight = 'none';
+  row.style.flexWrap = 'nowrap';
+  row.style.overflow = 'visible';
+
+  requestAnimationFrame(() => {
+    const containerWidth = row.parentElement.offsetWidth;
+    const chips = Array.from(row.children);
+    const gap = 8;
+
+    // Measure total width of all chips
+    let totalWidth = 0;
+    chips.forEach((c, i) => { totalWidth += c.offsetWidth + (i > 0 ? gap : 0); });
+
+    const allFit = totalWidth <= containerWidth;
+
+    if (allFit) {
+      // Everything fits — no toggle needed
+      row.innerHTML = items.map(makeChipHTML).join('');
+      row.style.flexWrap = 'nowrap';
+      row.style.overflow = 'hidden';
+      row.style.maxHeight = '';
+      toggle.style.display = 'none';
+      return;
+    }
+
+    // Switch to wrap to get natural height
+    row.innerHTML = items.map(makeChipHTML).join('');
+    row.style.flexWrap = 'wrap';
+    row.style.overflow = 'visible';
+    row.style.maxHeight = 'none';
+
+    requestAnimationFrame(() => {
+      const naturalHeight = row.scrollHeight;
+      const firstChip = row.querySelector('.chip');
+      const oneRowH = firstChip ? firstChip.offsetHeight + 2 : 40;
+
+      // Count hidden
+      const rowTop = row.getBoundingClientRect().top;
+      const allChips = Array.from(row.querySelectorAll('.chip'));
+      const hiddenCount = allChips.filter(c => c.getBoundingClientRect().top > rowTop + oneRowH - 4).length;
+
+      // Collapse
+      row.style.maxHeight = oneRowH + 'px';
+      row.style.overflow = 'hidden';
+
+      // Show toggle
+      toggle.style.display = '';
+      toggle.textContent = `Show ${hiddenCount} more`;
+
+      toggle.onclick = (e) => {
+        e.preventDefault();
+        v6Expanded = !v6Expanded;
+
+        if (v6Expanded) {
+          row.style.maxHeight = naturalHeight + 'px';
+          row.style.overflow = 'visible';
+          toggle.textContent = 'Show less';
+        } else {
+          row.style.maxHeight = oneRowH + 'px';
+          row.style.overflow = 'hidden';
+          toggle.textContent = `Show ${hiddenCount} more`;
+        }
+      };
+    });
+  });
+}
+
+// ========== VARIANT 6.1: Toggle inline next to label ==========
+let v61Expanded = false;
+
+function renderV61(items) {
+  const row = document.getElementById('v6-1-row');
+  const toggle = document.getElementById('v6-1-toggle');
+  v61Expanded = false;
+
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.maxHeight = 'none';
+  row.style.flexWrap = 'nowrap';
+  row.style.overflow = 'visible';
+
+  requestAnimationFrame(() => {
+    const containerWidth = row.parentElement.offsetWidth;
+    const chips = Array.from(row.children);
+    const gap = 8;
+    let totalWidth = 0;
+    chips.forEach((c, i) => { totalWidth += c.offsetWidth + (i > 0 ? gap : 0); });
+
+    if (totalWidth <= containerWidth) {
+      row.innerHTML = items.map(makeChipHTML).join('');
+      row.style.flexWrap = 'nowrap';
+      row.style.overflow = 'hidden';
+      row.style.maxHeight = '';
+      toggle.style.display = 'none';
+      return;
+    }
+
+    row.innerHTML = items.map(makeChipHTML).join('');
+    row.style.flexWrap = 'wrap';
+    row.style.overflow = 'visible';
+    row.style.maxHeight = 'none';
+
+    requestAnimationFrame(() => {
+      const naturalHeight = row.scrollHeight;
+      const firstChip = row.querySelector('.chip');
+      const oneRowH = firstChip ? firstChip.offsetHeight + 2 : 40;
+
+      const rowTop = row.getBoundingClientRect().top;
+      const allChips = Array.from(row.querySelectorAll('.chip'));
+      const hiddenCount = allChips.filter(c => c.getBoundingClientRect().top > rowTop + oneRowH - 4).length;
+
+      row.style.maxHeight = oneRowH + 'px';
+      row.style.overflow = 'hidden';
+
+      toggle.style.display = '';
+      toggle.textContent = `· Show ${hiddenCount} more`;
+
+      toggle.onclick = (e) => {
+        e.preventDefault();
+        v61Expanded = !v61Expanded;
+
+        if (v61Expanded) {
+          row.style.maxHeight = naturalHeight + 'px';
+          row.style.overflow = 'visible';
+          toggle.textContent = '· Show less';
+        } else {
+          row.style.maxHeight = oneRowH + 'px';
+          row.style.overflow = 'hidden';
+          toggle.textContent = `· Show ${hiddenCount} more`;
+        }
+      };
+    });
+  });
+}
+
+// ========== VARIANT 7: Hover to expand ==========
+function renderV7(items) {
+  const container = document.getElementById('v7-container');
+  const row = document.getElementById('v7-row');
+  const box = document.getElementById('v7-box');
+  const hint = document.getElementById('v7-hint');
+
+  // Always render ALL chips with wrap — we animate height only
+  row.innerHTML = items.map(makeChipHTML).join('');
+  row.style.flexWrap = 'wrap';
+  row.style.maxHeight = 'none';
+  row.style.overflow = 'visible';
+  row.classList.remove('is-collapsing');
+
+  requestAnimationFrame(() => {
+    const firstChip = row.querySelector('.chip');
+    if (!firstChip) return;
+
+    const oneRowH = firstChip.offsetHeight + 2;
+    const naturalHeight = row.scrollHeight;
+    const overflows = naturalHeight > oneRowH + 4;
+
+    if (!overflows) {
+      // Everything fits — no hover behavior needed
+      row.style.maxHeight = oneRowH + 'px';
+      row.style.overflow = 'hidden';
+      hint.style.display = 'none';
+      return;
+    }
+
+    // Count hidden chips
+    const rowTop = row.getBoundingClientRect().top;
+    const chips = Array.from(row.querySelectorAll('.chip'));
+    const hiddenCount = chips.filter(c => c.getBoundingClientRect().top > rowTop + oneRowH - 4).length;
+
+    // Collapse to one row
+    row.style.maxHeight = oneRowH + 'px';
+    row.style.overflow = 'hidden';
+
+    // Show hint overlay
+    hint.textContent = `View all ${items.length} →`;
+    hint.style.display = 'flex';
+    hint.classList.remove('is-hidden');
+
+    // Clean up old listeners
+    if (box._v7Enter) box.removeEventListener('mouseenter', box._v7Enter);
+    if (box._v7Leave) box.removeEventListener('mouseleave', box._v7Leave);
+
+    let hoverTimer = null;
+    let isExpanded = false;
+
+    box._v7Enter = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => {
+        if (!isExpanded) {
+          isExpanded = true;
+          row.classList.remove('is-collapsing');
+          box.classList.add('is-hovered');
+          hint.classList.add('is-hidden');
+          // Force reflow so transition starts from current max-height
+          void row.offsetHeight;
+          row.style.maxHeight = naturalHeight + 'px';
+        }
+      }, 150);
+    };
+
+    box._v7Leave = () => {
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(() => {
+        if (isExpanded) {
+          isExpanded = false;
+          row.classList.add('is-collapsing');
+          box.classList.remove('is-hovered');
+          hint.classList.remove('is-hidden');
+          row.style.maxHeight = oneRowH + 'px';
+        }
+      }, 250);
+    };
+
+    box.addEventListener('mouseenter', box._v7Enter);
+    box.addEventListener('mouseleave', box._v7Leave);
+  });
+}
+
+// ========== Master render ==========
+let renderQueued = false;
+function renderAll() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => {
+    renderQueued = false;
+    const count = parseInt(slider.value);
+    const items = ALL_MATTERS.slice(0, count);
+    countDisplay.textContent = `${count} item${count !== 1 ? 's' : ''}`;
+
+    const width = parseInt(widthSlider.value);
+    widthDisplay.textContent = `${width}%`;
+    document.querySelectorAll('.variant').forEach(v => v.style.width = width + '%');
+
+    closeV1Popover();
+    renderV1(items);
+    renderV2(items);
+    renderV3(items);
+    renderV4(items);
+    renderV5(items);
+    renderV6(items);
+    renderV61(items);
+    renderV7(items);
+  });
+}
+
+slider.addEventListener('input', renderAll);
+widthSlider.addEventListener('input', renderAll);
+
+// Debounced resize handling
+let resizeTimer;
+const ro = new ResizeObserver(() => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderAll, 100);
+});
+ro.observe(document.getElementById('v1-container'));
+
+renderAll();
+</script>
+
+</body>
+</html>

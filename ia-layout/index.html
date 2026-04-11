@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IA Layout Variants — Three-Panel Timesheet</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f0; color: #1a1a1a; }
+
+  h1 { font-size: 18px; font-weight: 600; padding: 28px 32px 6px; }
+  .variant-label { font-size: 13px; color: #666; padding: 2px 32px 16px; }
+  .annotation {
+    background: #fffde7; border: 1px solid #ffe082; border-radius: 8px;
+    padding: 14px 18px; margin: 0 32px 16px; font-size: 13px; line-height: 1.6; color: #555;
+  }
+  .annotation strong { color: #333; }
+  .section-divider { border: none; border-top: 2px solid #ddd; margin: 40px 32px 8px; }
+
+  /* ══════════════════════════════════════════
+     SHARED: Icon Rail (left nav)
+     ══════════════════════════════════════════ */
+  .icon-rail {
+    width: 64px;
+    background: #fff;
+    border-right: 1px solid #e8e8e8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .rail-logo {
+    width: 32px; height: 32px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .rail-logo::after {
+    content: '';
+    width: 6px; height: 6px;
+    background: #f5a623;
+    border-radius: 50%;
+    position: absolute; top: 4px; right: 4px;
+  }
+  .rail-item {
+    width: 48px; height: 48px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    color: #888;
+    font-size: 10px;
+    transition: background 0.15s, color 0.15s;
+    position: relative;
+    gap: 3px;
+  }
+  .rail-item:hover { background: #f5f5f5; color: #333; }
+  .rail-item.active { color: #1a1a1a; }
+  .rail-item.active::before {
+    content: '';
+    position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 20px;
+    background: #f5a623;
+    border-radius: 0 2px 2px 0;
+  }
+  .rail-icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .rail-spacer { flex: 1; }
+  .rail-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #555;
+    margin-top: 8px;
+  }
+
+  /* ══════════════════════════════════════════
+     SHARED: Main timesheet content
+     ══════════════════════════════════════════ */
+  .main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: #fafafa;
+  }
+  .main-header {
+    padding: 16px 20px 12px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .main-header-left { display: flex; align-items: center; gap: 12px; }
+  .main-header h2 { font-size: 22px; font-weight: 700; }
+  .main-header .day-label { font-size: 13px; color: #888; }
+  .main-header-right { display: flex; align-items: center; gap: 10px; }
+
+  .main-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+  .main-scroll::-webkit-scrollbar { width: 6px; }
+  .main-scroll::-webkit-scrollbar-track { background: transparent; }
+  .main-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+  .entry-group { margin-bottom: 16px; }
+  .entry-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px 8px 0 0;
+    font-size: 14px; font-weight: 600;
+  }
+  .group-color { width: 3px; height: 100%; border-radius: 2px; margin-right: 10px; }
+  .entry-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px 10px 24px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-top: none;
+    font-size: 13px;
+  }
+  .entry-row:last-child { border-radius: 0 0 8px 8px; }
+  .entry-name { color: #0066cc; cursor: pointer; }
+  .entry-tag { background: #f0ebe3; color: #7a6e5e; font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 8px; }
+  .entry-hours { color: #888; font-size: 13px; }
+  .entry-warn { color: #e65100; margin-left: 8px; font-size: 13px; }
+  .add-entry { padding: 8px 12px 8px 24px; font-size: 12px; color: #aaa; background: #fff; border: 1px solid #eee; border-top: none; border-radius: 0 0 8px 8px; cursor: pointer; }
+
+  /* ══════════════════════════════════════════
+     SHARED: Side panel
+     ══════════════════════════════════════════ */
+  .side-panel {
+    width: 300px;
+    background: #fff;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.25s ease, opacity 0.2s ease;
+    overflow: hidden;
+  }
+  .side-panel.collapsed { width: 0; border-left: none; opacity: 0; }
+  .sp-header {
+    padding: 16px; border-bottom: 1px solid #eee; display: flex;
+    justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .sp-header h3 { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .sp-tabs { display: flex; gap: 14px; padding: 8px 16px; border-bottom: 1px solid #eee; font-size: 12px; flex-shrink: 0; }
+  .sp-tabs span { cursor: pointer; padding-bottom: 4px; color: #999; }
+  .sp-tabs span.active { color: #333; font-weight: 600; border-bottom: 2px solid #333; }
+  .sp-body {
+    flex: 1; overflow-y: auto; padding: 12px 16px;
+    scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.1) transparent;
+  }
+  .sp-body::-webkit-scrollbar { width: 5px; }
+  .sp-body::-webkit-scrollbar-track { background: transparent; }
+  .sp-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+  .activity-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; color: #555; }
+  .activity-badge { display: inline-block; background: #333; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-bottom: 4px; }
+  .activity-time { font-size: 11px; color: #999; }
+
+  .close-btn {
+    background: none; border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #888; transition: background 0.15s, color 0.15s;
+  }
+  .close-btn:hover { background: #f0f0f0; color: #333; }
+
+  /* ══════════════════════════════════════════
+     Demo container
+     ══════════════════════════════════════════ */
+  .demo {
+    display: flex;
+    height: 520px;
+    margin: 0 32px 24px;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  /* ══════════════════════════════════════════
+     VARIANT 1: Fixed rail + header close (recommended simple fix)
+     ══════════════════════════════════════════ */
+
+  /* Toggle button in main header area */
+  .activity-toggle {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+  .activity-toggle:hover { background: #f5f5f5; border-color: #ccc; }
+  .activity-toggle.active { background: #f0f0f0; border-color: #bbb; color: #333; }
+  .activity-toggle .dot { width: 6px; height: 6px; background: #f5a623; border-radius: 50%; }
+
+  /* ══════════════════════════════════════════
+     VARIANT 2: Activity as bottom drawer
+     ══════════════════════════════════════════ */
+  .v2-main-area {
+    flex: 1; display: flex; flex-direction: column; min-width: 0; background: #fafafa;
+  }
+  .v2-split {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .v2-timesheet {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+  .v2-timesheet::-webkit-scrollbar { width: 6px; }
+  .v2-timesheet::-webkit-scrollbar-track { background: transparent; }
+  .v2-timesheet::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+  .v2-drawer {
+    height: 180px;
+    min-height: 0;
+    border-top: 1px solid #e0e0e0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    transition: height 0.25s ease;
+    flex-shrink: 0;
+  }
+  .v2-drawer.collapsed { height: 36px; overflow: hidden; }
+  .v2-drawer-header {
+    padding: 8px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+  }
+  .v2-drawer-header h3 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .v2-drawer-header .badge { background: #f5a623; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+  .v2-drawer-body {
+    flex: 1; overflow-y: auto; overflow-x: auto;
+    display: flex; gap: 12px; padding: 0 16px 12px;
+  }
+  .v2-activity-card {
+    min-width: 140px;
+    padding: 10px 14px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .v2-activity-card .card-time { font-size: 11px; color: #999; margin-top: 4px; }
+  .v2-chevron { font-size: 11px; color: #999; transition: transform 0.2s; }
+  .v2-drawer.collapsed .v2-chevron { transform: rotate(180deg); }
+
+  /* ══════════════════════════════════════════
+     VARIANT 3: Activity as overlay sheet
+     ══════════════════════════════════════════ */
+  .v3-overlay {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 320px;
+    background: #fff;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  .v3-overlay.open { transform: translateX(0); }
+  .v3-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.08);
+    z-index: 15;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .v3-scrim.visible { opacity: 1; pointer-events: auto; }
+
+  /* ══════════════════════════════════════════
+     VARIANT 4: Activity integrated as tab
+     ══════════════════════════════════════════ */
+  .v4-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid #eee; background: #fff;
+    padding: 0 20px; flex-shrink: 0;
+  }
+  .v4-tab {
+    padding: 10px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #888;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .v4-tab:hover { color: #555; }
+  .v4-tab.active { color: #1a1a1a; font-weight: 600; border-bottom-color: #f5a623; }
+  .v4-tab .tab-count { background: #f0f0f0; color: #666; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; }
+
+  .v4-content { flex: 1; overflow-y: auto; padding: 16px 20px;
+    scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+  .v4-content::-webkit-scrollbar { width: 6px; }
+  .v4-content::-webkit-scrollbar-track { background: transparent; }
+  .v4-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+  .v4-activity-list { display: flex; flex-direction: column; gap: 8px; }
+  .v4-activity-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border: 1px solid #eee; border-radius: 8px; font-size: 13px; background: #fff;
+  }
+  .v4-act-badge { background: #333; color: #fff; font-size: 10px; padding: 3px 10px; border-radius: 4px; white-space: nowrap; }
+  .v4-act-time { font-size: 12px; color: #999; margin-left: auto; white-space: nowrap; }
+
+  /* ══════════════════════════════════════════
+     Recommendation badge
+     ══════════════════════════════════════════ */
+  .rec-badge {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════
+     VARIANT 1: Fixed Icon Rail + Right Panel with Header Close
+     ════════════════════════════════════════════════════════════════ -->
+<h1>Variant 1 — Fixed icon rail + right panel with header close <span class="rec-badge">Simplest fix</span></h1>
+<p class="variant-label">Keep the current layout, just fix the affordances.</p>
+<div class="annotation">
+  <strong>What changes:</strong> The left nav becomes a permanent icon rail — no toggle, no collapse, it's always 64px. The right panel close button moves into the panel header. A toolbar button in the main header reopens the panel. All scrollbar/toggle conflicts disappear because there are no edge toggles anywhere.<br>
+  <strong>When to use:</strong> If people genuinely work with Activity open alongside the timesheet. This is the smallest change from your current design.
+</div>
+
+<div class="demo" id="demo1">
+  <!-- Left icon rail -->
+  <div class="icon-rail">
+    <div class="rail-logo"></div>
+    <div class="rail-item active"><div class="rail-icon">📋</div><span>Timesheet</span></div>
+    <div class="rail-item"><div class="rail-icon">📅</div><span>Calendar</span></div>
+    <div class="rail-item"><div class="rail-icon">⏱</div><span>Timers</span></div>
+    <div class="rail-item"><div class="rail-icon">📡</div><span>Signal</span></div>
+    <div class="rail-item"><div class="rail-icon">🔧</div><span>Debug</span></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-item"><div class="rail-icon">💬</div></div>
+    <div class="rail-avatar">JM</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-area">
+    <div class="main-header">
+      <div class="main-header-left">
+        <div>
+          <div class="day-label">Wednesday</div>
+          <h2>April 8</h2>
+        </div>
+      </div>
+      <div class="main-header-right">
+        <button class="activity-toggle" id="actToggle1" onclick="toggleV1()">
+          <span class="dot"></span> Activity
+        </button>
+      </div>
+    </div>
+    <div class="main-scroll" id="mainScroll1"></div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="side-panel" id="sidePanel1">
+    <div class="sp-header">
+      <h3>Work Activity</h3>
+      <button class="close-btn" onclick="toggleV1()" title="Close panel">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l5 5-5 5M13 7H1"/></svg>
+      </button>
+    </div>
+    <div class="sp-tabs"><span class="active">All <span style="background:#f0f0f0;padding:1px 5px;border-radius:8px;font-size:10px">1</span></span><span>Groups</span><span>Insights</span></div>
+    <div class="sp-body" id="spBody1"></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════════════════════
+     VARIANT 2: Bottom Drawer
+     ════════════════════════════════════════════════════════════════ -->
+<h1>Variant 2 — Activity as a bottom drawer</h1>
+<p class="variant-label">Reclaim the horizontal space. Activity lives below the timesheet.</p>
+<div class="annotation">
+  <strong>What changes:</strong> No right panel at all. Activity becomes a collapsible bottom drawer with a horizontal card layout. Clicking the drawer header toggles it. The timesheet gets the full width, which matters on narrower screens.<br>
+  <strong>When to use:</strong> If Activity is a quick-reference feed — something you glance at but don't scroll through. Horizontal cards let you scan times at a glance. This pattern is common for console/terminal panels in dev tools.<br>
+  <strong>Tradeoff:</strong> Loses vertical space instead of horizontal. Doesn't scale if Activity items are long or numerous.
+</div>
+
+<div class="demo" id="demo2">
+  <div class="icon-rail">
+    <div class="rail-logo"></div>
+    <div class="rail-item active"><div class="rail-icon">📋</div><span>Timesheet</span></div>
+    <div class="rail-item"><div class="rail-icon">📅</div><span>Calendar</span></div>
+    <div class="rail-item"><div class="rail-icon">⏱</div><span>Timers</span></div>
+    <div class="rail-item"><div class="rail-icon">📡</div><span>Signal</span></div>
+    <div class="rail-item"><div class="rail-icon">🔧</div><span>Debug</span></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-item"><div class="rail-icon">💬</div></div>
+    <div class="rail-avatar">JM</div>
+  </div>
+
+  <div class="v2-main-area">
+    <div class="main-header">
+      <div class="main-header-left">
+        <div><div class="day-label">Wednesday</div><h2>April 8</h2></div>
+      </div>
+    </div>
+    <div class="v2-split">
+      <div class="v2-timesheet" id="mainScroll2"></div>
+      <div class="v2-drawer" id="drawer2">
+        <div class="v2-drawer-header" onclick="toggleDrawer2()">
+          <h3>Work Activity <span class="badge">1</span></h3>
+          <span class="v2-chevron">▼</span>
+        </div>
+        <div class="v2-drawer-body" id="drawerBody2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════════════════════
+     VARIANT 3: Overlay / Slide-over Sheet
+     ════════════════════════════════════════════════════════════════ -->
+<h1>Variant 3 — Activity as a slide-over overlay <span class="rec-badge">Recommended</span></h1>
+<p class="variant-label">The panel appears on demand over the content, not beside it.</p>
+<div class="annotation">
+  <strong>What changes:</strong> Activity is not a persistent panel — it's a slide-over sheet triggered by a toolbar button. It overlays the main content with a subtle scrim. Clicking outside or the × closes it. The main layout is always just: icon rail + full-width timesheet.<br>
+  <strong>When to use:</strong> If Activity is something you check occasionally rather than monitor continuously. This is the pattern Google uses for side panels in Gmail/Calendar, and Apple uses in many macOS apps.<br>
+  <strong>Why I'd recommend this:</strong> It eliminates every edge/scroll/toggle issue. The main content always has full width. The panel only exists when you want it. And it works identically on every screen size.
+</div>
+
+<div class="demo" id="demo3" style="position:relative">
+  <div class="icon-rail">
+    <div class="rail-logo"></div>
+    <div class="rail-item active"><div class="rail-icon">📋</div><span>Timesheet</span></div>
+    <div class="rail-item"><div class="rail-icon">📅</div><span>Calendar</span></div>
+    <div class="rail-item"><div class="rail-icon">⏱</div><span>Timers</span></div>
+    <div class="rail-item"><div class="rail-icon">📡</div><span>Signal</span></div>
+    <div class="rail-item"><div class="rail-icon">🔧</div><span>Debug</span></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-item"><div class="rail-icon">💬</div></div>
+    <div class="rail-avatar">JM</div>
+  </div>
+
+  <div class="main-area">
+    <div class="main-header">
+      <div class="main-header-left">
+        <div><div class="day-label">Wednesday</div><h2>April 8</h2></div>
+      </div>
+      <div class="main-header-right">
+        <button class="activity-toggle" id="actToggle3" onclick="toggleV3()">
+          <span class="dot"></span> Activity
+        </button>
+      </div>
+    </div>
+    <div class="main-scroll" id="mainScroll3"></div>
+  </div>
+
+  <div class="v3-scrim" id="scrim3" onclick="toggleV3()"></div>
+  <div class="v3-overlay" id="overlay3">
+    <div class="sp-header">
+      <h3>Work Activity</h3>
+      <button class="close-btn" onclick="toggleV3()">✕</button>
+    </div>
+    <div class="sp-tabs"><span class="active">All <span style="background:#f0f0f0;padding:1px 5px;border-radius:8px;font-size:10px">1</span></span><span>Groups</span><span>Insights</span></div>
+    <div class="sp-body" id="spBody3"></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════════════════════
+     VARIANT 4: Activity as a Tab in the main area
+     ════════════════════════════════════════════════════════════════ -->
+<h1>Variant 4 — Activity as a tab alongside the timesheet</h1>
+<p class="variant-label">No panels at all. Activity is a peer view within the main content area.</p>
+<div class="annotation">
+  <strong>What changes:</strong> The main area has tabs: "Timesheet" and "Activity." You switch between them. There's no secondary panel, no collapse button, no competing scrollbars. The layout is just: icon rail + one content area.<br>
+  <strong>When to use:</strong> If Activity and the timesheet are never needed side-by-side. This is the most radical simplification but also the cleanest. It's essentially the mobile pattern applied to desktop.<br>
+  <strong>Tradeoff:</strong> You lose the ability to see Activity while editing the timesheet. If that's important, this won't work. But if Activity is mostly reviewed separately, this removes all complexity.
+</div>
+
+<div class="demo" id="demo4">
+  <div class="icon-rail">
+    <div class="rail-logo"></div>
+    <div class="rail-item active"><div class="rail-icon">📋</div><span>Timesheet</span></div>
+    <div class="rail-item"><div class="rail-icon">📅</div><span>Calendar</span></div>
+    <div class="rail-item"><div class="rail-icon">⏱</div><span>Timers</span></div>
+    <div class="rail-item"><div class="rail-icon">📡</div><span>Signal</span></div>
+    <div class="rail-item"><div class="rail-icon">🔧</div><span>Debug</span></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-item"><div class="rail-icon">💬</div></div>
+    <div class="rail-avatar">JM</div>
+  </div>
+
+  <div class="main-area">
+    <div class="main-header">
+      <div class="main-header-left">
+        <div><div class="day-label">Wednesday</div><h2>April 8</h2></div>
+      </div>
+    </div>
+    <div class="v4-tabs">
+      <div class="v4-tab active" id="v4tabTimesheet" onclick="switchV4Tab('timesheet')">Timesheet <span class="tab-count">8</span></div>
+      <div class="v4-tab" id="v4tabActivity" onclick="switchV4Tab('activity')">Activity <span class="tab-count">1</span></div>
+    </div>
+    <div class="v4-content" id="v4contentTimesheet"></div>
+    <div class="v4-content" id="v4contentActivity" style="display:none"></div>
+  </div>
+</div>
+
+<div style="height: 60px"></div>
+
+<script>
+// ── Data generators ──
+function fillTimesheet(container) {
+  const groups = [
+    { name: 'Meetings', color: '#c0956c', tags: 'Product · Retention', entries: ['I met with Miz today', 'Enter narrative', 'asdfsdaf'] },
+    { name: 'Strategy', color: '#4caf50', tags: 'Strategy · Company', entries: ['THis is a test', 'Enter narrative', 'Enter narrative'] },
+    { name: 'RAD · Research', color: '#42a5f5', tags: 'RAD · Laurel Technology', entries: ['Did some research', 'User interviews', 'Competitive analysis'] },
+    { name: 'Engineering', color: '#ab47bc', tags: 'Eng · Platform', entries: ['Bug fix: auth flow', 'Code review', 'Deploy pipeline fix'] },
+  ];
+  groups.forEach(g => {
+    let html = `<div class="entry-group">`;
+    html += `<div class="entry-group-header"><span style="display:flex;align-items:center"><span style="display:inline-block;width:3px;height:18px;background:${g.color};border-radius:2px;margin-right:10px"></span>${g.name}</span><span style="color:#888;font-size:12px">${g.tags}</span></div>`;
+    g.entries.forEach(e => {
+      html += `<div class="entry-row"><span><span class="entry-name">${e}</span><span class="entry-tag">F151</span></span><span><span class="entry-hours">0.0</span><span class="entry-warn">⚠</span></span></div>`;
+    });
+    html += `<div class="add-entry">+ Add new entry</div></div>`;
+    container.innerHTML += html;
+  });
+}
+
+function fillActivities(container) {
+  const items = [
+    { label: '10AM', time: '10:19 AM', dur: '1m 17s' },
+    { label: '10:30AM', time: '10:45 AM', dur: '3m 02s' },
+    { label: '11AM', time: '11:10 AM', dur: '45s' },
+    { label: 'Sync', time: '11:30 AM', dur: '2m 10s' },
+    { label: 'Lunch', time: '12:00 PM', dur: '1m 50s' },
+    { label: '1PM', time: '1:15 PM', dur: '4m 22s' },
+    { label: 'Standup', time: '2:00 PM', dur: '30s' },
+    { label: '2:30PM', time: '2:30 PM', dur: '2m 05s' },
+    { label: 'Review', time: '3:00 PM', dur: '1m 12s' },
+    { label: 'Planning', time: '3:45 PM', dur: '5m 00s' },
+  ];
+  items.forEach(i => {
+    container.innerHTML += `<div class="activity-item"><span class="activity-badge">${i.label}</span><div style="margin-top:4px"><span class="activity-time">${i.time} · ${i.dur}</span></div></div>`;
+  });
+}
+
+function fillDrawerCards(container) {
+  const items = [
+    { label: '10AM', time: '10:19 AM', dur: '1m 17s' },
+    { label: '10:30AM', time: '10:45 AM', dur: '3m 02s' },
+    { label: '11AM', time: '11:10 AM', dur: '45s' },
+    { label: 'Sync', time: '11:30 AM', dur: '2m 10s' },
+    { label: 'Lunch', time: '12:00 PM', dur: '1m 50s' },
+    { label: '1PM', time: '1:15 PM', dur: '4m 22s' },
+    { label: 'Standup', time: '2:00 PM', dur: '30s' },
+  ];
+  items.forEach(i => {
+    container.innerHTML += `<div class="v2-activity-card"><div class="activity-badge">${i.label}</div><div class="card-time">${i.time} · ${i.dur}</div></div>`;
+  });
+}
+
+function fillActivityTab(container) {
+  const items = [
+    { label: '10AM', time: '10:19 AM', dur: '1m 17s' },
+    { label: '10:30AM', time: '10:45 AM', dur: '3m 02s' },
+    { label: '11AM', time: '11:10 AM', dur: '45s' },
+    { label: 'Sync', time: '11:30 AM', dur: '2m 10s' },
+    { label: 'Lunch', time: '12:00 PM', dur: '1m 50s' },
+    { label: '1PM', time: '1:15 PM', dur: '4m 22s' },
+    { label: 'Standup', time: '2:00 PM', dur: '30s' },
+    { label: '2:30PM', time: '2:30 PM', dur: '2m 05s' },
+    { label: 'Review', time: '3:00 PM', dur: '1m 12s' },
+  ];
+  container.innerHTML = '<div class="v4-activity-list">' + items.map(i =>
+    `<div class="v4-activity-row"><span class="v4-act-badge">${i.label}</span><span>${i.dur}</span><span class="v4-act-time">${i.time}</span></div>`
+  ).join('') + '</div>';
+}
+
+// Populate all demos
+['mainScroll1','mainScroll2','mainScroll3','v4contentTimesheet'].forEach(id => fillTimesheet(document.getElementById(id)));
+['spBody1','spBody3'].forEach(id => fillActivities(document.getElementById(id)));
+fillDrawerCards(document.getElementById('drawerBody2'));
+fillActivityTab(document.getElementById('v4contentActivity'));
+
+// ── Variant 1: Right panel toggle ──
+let v1Open = true;
+function toggleV1() {
+  v1Open = !v1Open;
+  document.getElementById('sidePanel1').classList.toggle('collapsed');
+  document.getElementById('actToggle1').classList.toggle('active');
+}
+
+// ── Variant 2: Bottom drawer ──
+let v2Open = true;
+function toggleDrawer2() {
+  v2Open = !v2Open;
+  document.getElementById('drawer2').classList.toggle('collapsed');
+}
+
+// ── Variant 3: Overlay ──
+let v3Open = false;
+function toggleV3() {
+  v3Open = !v3Open;
+  document.getElementById('overlay3').classList.toggle('open');
+  document.getElementById('scrim3').classList.toggle('visible');
+  document.getElementById('actToggle3').classList.toggle('active');
+}
+
+// ── Variant 4: Tabs ──
+function switchV4Tab(tab) {
+  const isTimesheet = tab === 'timesheet';
+  document.getElementById('v4contentTimesheet').style.display = isTimesheet ? '' : 'none';
+  document.getElementById('v4contentActivity').style.display = isTimesheet ? 'none' : '';
+  document.getElementById('v4tabTimesheet').classList.toggle('active', isTimesheet);
+  document.getElementById('v4tabActivity').classList.toggle('active', !isTimesheet);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timesheet Header — Restructure Variants</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f0; color: #1a1a1a; padding: 24px; }
+
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .intro { color: #555; font-size: 14px; margin-bottom: 32px; max-width: 720px; line-height: 1.5; }
+
+  .variant-label {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #888; margin-bottom: 6px;
+  }
+  .variant-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .variant-desc { font-size: 13px; color: #666; margin-bottom: 12px; line-height: 1.45; max-width: 680px; }
+  .variant-section { margin-bottom: 40px; }
+
+  /* ---- shared header bar ---- */
+  .header-bar {
+    display: flex; align-items: center; height: 52px;
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 10px;
+    padding: 0 16px; gap: 12px; position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  /* sidebar toggle */
+  .sidebar-toggle {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ddd;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: #fff; flex-shrink: 0;
+  }
+  .sidebar-toggle:hover { background: #f5f5f5; }
+  .sidebar-toggle svg { width: 16px; height: 16px; color: #555; }
+
+  /* divider */
+  .divider { width: 1px; height: 24px; background: #e5e5e5; flex-shrink: 0; }
+
+  /* spacer */
+  .spacer { flex: 1; }
+
+  /* date text */
+  .date-text { font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .date-text .day-name { color: #888; font-weight: 400; }
+
+  /* nav arrows */
+  .nav-arrow {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ddd;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; background: #fff; flex-shrink: 0; transition: all 0.15s;
+  }
+  .nav-arrow:hover { background: #f0f0f0; border-color: #ccc; }
+  .nav-arrow svg { width: 14px; height: 14px; color: #555; }
+
+  /* calendar icon button */
+  .cal-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #ddd;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; background: #fff; flex-shrink: 0; transition: all 0.15s;
+  }
+  .cal-btn:hover { background: #f0f0f0; border-color: #ccc; }
+  .cal-btn svg { width: 15px; height: 15px; color: #555; }
+
+  /* today button */
+  .today-btn {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 5px;
+    border: 1px solid #ddd; background: #fff; cursor: pointer; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .today-btn:hover { background: #f0f0f0; border-color: #ccc; }
+
+  /* hours badges */
+  .hours-group { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+  .hours-badge {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 12px; color: #666; white-space: nowrap;
+  }
+  .hours-badge .label { text-transform: uppercase; font-weight: 600; font-size: 10px; letter-spacing: 0.04em; color: #999; }
+  .hours-badge .value { font-weight: 600; font-size: 13px; color: #333; }
+  .hours-badge .target { color: #aaa; }
+  .hours-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .hours-dot.green { background: #4caf50; }
+  .hours-dot.amber { background: #f5a623; }
+
+  /* more / release */
+  .more-btn {
+    width: 28px; height: 28px; border-radius: 6px; display: flex;
+    align-items: center; justify-content: center; cursor: pointer;
+    background: transparent; border: none; transition: background 0.15s;
+  }
+  .more-btn:hover { background: #f0f0f0; }
+
+  .release-btn {
+    font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 6px;
+    border: none; background: #2d2d2d; color: #fff; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .release-btn:hover { background: #444; }
+  .release-btn .badge { background: rgba(255,255,255,0.2); border-radius: 4px; padding: 1px 5px; font-size: 11px; }
+
+  /* ---- Variant-specific ---- */
+
+  /* Variant A — segmented control */
+  .date-nav-segment {
+    display: inline-flex; align-items: center; border: 1px solid #ddd;
+    border-radius: 8px; overflow: hidden; height: 32px; flex-shrink: 0;
+  }
+  .date-nav-segment .seg-btn {
+    width: 30px; height: 32px; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; background: #fff;
+    border: none; border-right: 1px solid #eee; transition: background 0.15s;
+  }
+  .date-nav-segment .seg-btn:last-child { border-right: none; }
+  .date-nav-segment .seg-btn:hover { background: #f5f5f5; }
+  .date-nav-segment .seg-date {
+    padding: 0 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; gap: 6px; border-right: 1px solid #eee;
+    background: #fff; height: 32px; transition: background 0.15s;
+  }
+  .date-nav-segment .seg-date:hover { background: #f8f8f8; }
+  .date-nav-segment .seg-date .caret { color: #aaa; font-size: 10px; }
+
+  /* Variant B — hover-reveal */
+  .date-hover-zone {
+    display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+    border-radius: 8px; cursor: pointer; position: relative; transition: background 0.15s;
+  }
+  .date-hover-zone:hover { background: #f5f5f0; }
+  .date-hover-zone .hover-arrows {
+    opacity: 0; display: flex; gap: 2px; transition: opacity 0.2s;
+  }
+  .date-hover-zone:hover .hover-arrows { opacity: 1; }
+  .date-hover-zone .hover-arrows .nav-arrow { width: 24px; height: 24px; border-color: transparent; background: transparent; }
+  .date-hover-zone .hover-arrows .nav-arrow:hover { background: #e8e8e5; }
+
+  /* Variant C — clickable date */
+  .date-clickable {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    border-radius: 8px; cursor: pointer; transition: background 0.15s;
+  }
+  .date-clickable:hover { background: #f5f5f0; }
+  .date-clickable .dropdown-caret { color: #aaa; font-size: 10px; transition: transform 0.2s; }
+  .date-clickable:hover .dropdown-caret { color: #666; }
+
+  /* Variant D — centered date */
+  .center-date-group {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* annotation */
+  .annotation {
+    margin-top: 8px; padding: 10px 14px; background: #fefce8; border: 1px solid #f0e68c;
+    border-radius: 8px; font-size: 12px; color: #665; line-height: 1.5;
+  }
+  .annotation strong { font-weight: 600; }
+
+  /* pros/cons */
+  .tradeoffs { display: flex; gap: 16px; margin-top: 8px; }
+  .tradeoff-col { flex: 1; }
+  .tradeoff-col h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #999; margin-bottom: 4px; }
+  .tradeoff-col ul { list-style: none; padding: 0; }
+  .tradeoff-col ul li { font-size: 12px; color: #555; line-height: 1.6; padding-left: 16px; position: relative; }
+  .tradeoff-col ul li::before { position: absolute; left: 0; }
+  .tradeoff-col.pros ul li::before { content: "+"; color: #4caf50; font-weight: 700; }
+  .tradeoff-col.cons ul li::before { content: "−"; color: #e57373; font-weight: 700; }
+
+  /* current state */
+  .current-label {
+    display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px;
+    background: #fee; color: #c62828; margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Timesheet Header — Restructure Exploration</h1>
+<p class="intro">The core problem: date display lives on the left, but its navigation controls (calendar picker, ← →) are stranded on the right. This violates the proximity principle — related controls should be visually grouped. Here are four approaches.</p>
+
+<!-- ============================================ -->
+<!-- CURRENT STATE -->
+<!-- ============================================ -->
+<div class="variant-section">
+  <div class="variant-label">Current State</div>
+  <span class="current-label">Problem</span>
+  <div class="variant-desc">Date on the left, navigation controls on the right. Users must scan across the full header width to connect "what date am I on" with "how do I change it."</div>
+  <div class="header-bar">
+    <div class="sidebar-toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </div>
+    <div class="date-text"><span class="day-name">Thursday</span>&nbsp; April 9</div>
+    <div class="spacer"></div>
+    <div class="cal-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></div>
+    <div class="divider"></div>
+    <div class="hours-group">
+      <div class="hours-badge"><div class="hours-dot amber"></div><div class="label">Week</div><div class="value">13.8</div><div class="target">⊘ 13.8</div></div>
+      <div class="hours-badge"><div class="hours-dot green"></div><div class="label">Day</div><div class="value">1.1</div><div class="target">⊘ 1.1</div></div>
+    </div>
+    <div class="more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    <div class="release-btn">Release <span class="badge">0</span></div>
+  </div>
+  <div class="annotation">
+    <strong>Problem:</strong> ~500px separates the date from its controls. The calendar icon and arrows are semantically "date navigation" but are positioned as if they belong to the hours summary region.
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- VARIANT A — Segmented Date Control -->
+<!-- ============================================ -->
+<div class="variant-section">
+  <div class="variant-label">Variant A</div>
+  <div class="variant-title">Segmented Date Control</div>
+  <div class="variant-desc">Combine the date, arrows, and calendar picker into a single compound component — like Google Calendar's header. Everything date-related is one visual unit. Clicking the date text opens the mini calendar.</div>
+  <div class="header-bar">
+    <div class="sidebar-toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </div>
+    <div class="divider"></div>
+    <div class="date-nav-segment">
+      <button class="seg-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="seg-date"><span>Thursday, Apr 9</span><span class="caret">▾</span></div>
+      <button class="seg-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></button>
+    </div>
+    <div class="today-btn">Today</div>
+    <div class="spacer"></div>
+    <div class="hours-group">
+      <div class="hours-badge"><div class="hours-dot amber"></div><div class="label">Week</div><div class="value">13.8</div><div class="target">⊘ 13.8</div></div>
+      <div class="hours-badge"><div class="hours-dot green"></div><div class="label">Day</div><div class="value">1.1</div><div class="target">⊘ 1.1</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    <div class="release-btn">Release <span class="badge">0</span></div>
+  </div>
+  <div class="tradeoffs">
+    <div class="tradeoff-col pros"><h4>Strengths</h4><ul>
+      <li>Strongest grouping — zero ambiguity about what controls the date</li>
+      <li>Arrows are always visible (no discoverability issue)</li>
+      <li>Proven pattern (Google Cal, Outlook, Harvest desktop)</li>
+    </ul></div>
+    <div class="tradeoff-col cons"><h4>Concerns</h4><ul>
+      <li>Left side is busier than before</li>
+      <li>Separate calendar icon is gone — relies on clicking the date text (needs clear affordance)</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- VARIANT B — Hover-Reveal Arrows -->
+<!-- ============================================ -->
+<div class="variant-section">
+  <div class="variant-label">Variant B</div>
+  <div class="variant-title">Hover-Reveal Arrows (Your Initial Direction)</div>
+  <div class="variant-desc">Arrows appear only when hovering the date region. The date itself is clickable to open the calendar. Clean default state, progressive disclosure on interaction. A "Today" chip stays visible as a quick-return anchor.</div>
+  <div class="header-bar">
+    <div class="sidebar-toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </div>
+    <div class="divider"></div>
+    <div class="date-hover-zone">
+      <div class="hover-arrows" style="order: -1;">
+        <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+      </div>
+      <div class="date-text" style="font-size:14px;"><span class="day-name">Thursday,</span> Apr 9 <span style="color:#aaa;font-size:10px;">▾</span></div>
+      <div class="hover-arrows">
+        <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></div>
+      </div>
+    </div>
+    <div class="today-btn">Today</div>
+    <div class="spacer"></div>
+    <div class="hours-group">
+      <div class="hours-badge"><div class="hours-dot amber"></div><div class="label">Week</div><div class="value">13.8</div><div class="target">⊘ 13.8</div></div>
+      <div class="hours-badge"><div class="hours-dot green"></div><div class="label">Day</div><div class="value">1.1</div><div class="target">⊘ 1.1</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    <div class="release-btn">Release <span class="badge">0</span></div>
+  </div>
+  <div class="annotation"><strong>Hover over the date area</strong> to see the arrows appear. This is the approach you mentioned — arrows hidden until you engage with the date zone.</div>
+  <div class="tradeoffs">
+    <div class="tradeoff-col pros"><h4>Strengths</h4><ul>
+      <li>Cleanest default state — minimal visual noise</li>
+      <li>Date region still clearly interactive (caret hint + hover background)</li>
+      <li>Good for power users who use keyboard shortcuts (←→) anyway</li>
+    </ul></div>
+    <div class="tradeoff-col cons"><h4>Concerns</h4><ul>
+      <li>Discoverability — new users won't know arrows exist until they hover</li>
+      <li>No hover on mobile/tablet — needs a fallback (always-visible or swipe)</li>
+      <li>Likely pushback point: "where did the arrows go?"</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- VARIANT C — Always-Visible Flanking Arrows -->
+<!-- ============================================ -->
+<div class="variant-section">
+  <div class="variant-label">Variant C</div>
+  <div class="variant-title">Flanking Arrows, Separate Calendar Trigger</div>
+  <div class="variant-desc">Arrows sit on either side of the date (always visible). A small calendar icon remains as an explicit "jump to date" affordance. This is the most conservative restructure — it just moves the existing controls to the left without changing interaction patterns.</div>
+  <div class="header-bar">
+    <div class="sidebar-toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </div>
+    <div class="divider"></div>
+    <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="date-text" style="font-size:14px;"><span class="day-name">Thursday,</span> Apr 9</div>
+    <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></div>
+    <div class="cal-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="today-btn">Today</div>
+    <div class="spacer"></div>
+    <div class="hours-group">
+      <div class="hours-badge"><div class="hours-dot amber"></div><div class="label">Week</div><div class="value">13.8</div><div class="target">⊘ 13.8</div></div>
+      <div class="hours-badge"><div class="hours-dot green"></div><div class="label">Day</div><div class="value">1.1</div><div class="target">⊘ 1.1</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    <div class="release-btn">Release <span class="badge">0</span></div>
+  </div>
+  <div class="tradeoffs">
+    <div class="tradeoff-col pros"><h4>Strengths</h4><ul>
+      <li>Lowest-risk change — everything is still explicitly visible</li>
+      <li>Keeps the calendar icon as a separate, discoverable affordance</li>
+      <li>Works identically on touch and pointer devices</li>
+      <li>Easiest to defend against "where did X go" pushback</li>
+    </ul></div>
+    <div class="tradeoff-col cons"><h4>Concerns</h4><ul>
+      <li>Left side has 5 elements: sidebar + divider + ← + date + → + calendar + today</li>
+      <li>Doesn't reduce visual complexity — just relocates it</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- VARIANT D — Centered Date -->
+<!-- ============================================ -->
+<div class="variant-section">
+  <div class="variant-label">Variant D</div>
+  <div class="variant-title">Centered Date Navigation</div>
+  <div class="variant-desc">Date becomes the hero element at the center of the header — flanked by arrows. This follows the pattern used in many native calendar apps (iOS Calendar, Fantastical). Hours and actions anchor to the right. The date commands attention because it's the primary context for everything on the page.</div>
+  <div class="header-bar">
+    <div class="sidebar-toggle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </div>
+    <div class="today-btn">Today</div>
+    <div class="spacer"></div>
+    <div class="center-date-group">
+      <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="date-clickable">
+        <div class="date-text" style="font-size:15px;"><span class="day-name">Thursday,</span> April 9</div>
+        <span class="dropdown-caret">▾</span>
+      </div>
+      <div class="nav-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="hours-group">
+      <div class="hours-badge"><div class="hours-dot amber"></div><div class="label">Week</div><div class="value">13.8</div><div class="target">⊘ 13.8</div></div>
+      <div class="hours-badge"><div class="hours-dot green"></div><div class="label">Day</div><div class="value">1.1</div><div class="target">⊘ 1.1</div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="#888"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>
+    <div class="release-btn">Release <span class="badge">0</span></div>
+  </div>
+  <div class="tradeoffs">
+    <div class="tradeoff-col pros"><h4>Strengths</h4><ul>
+      <li>Strongest hierarchy — the date is the most important context, and it looks it</li>
+      <li>Natural eye-flow: sidebar → (scan center) date → (scan right) summary</li>
+      <li>Clean separation: left = navigation, center = context, right = data + actions</li>
+    </ul></div>
+    <div class="tradeoff-col cons"><h4>Concerns</h4><ul>
+      <li>Bigger layout shift from current — may feel unfamiliar to existing users</li>
+      <li>Center positioning can collide with hours group on narrow viewports</li>
+      <li>"Today" button is now isolated on the left away from the date (could also go center)</li>
+    </ul></div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- Recommendation -->
+<!-- ============================================ -->
+<div class="variant-section" style="border-top: 2px solid #e0e0e0; padding-top: 24px;">
+  <div class="variant-label">Recommendation</div>
+  <div class="variant-title">Start with Variant A, prototype B as a progressive enhancement</div>
+  <div class="variant-desc" style="max-width: 720px;">
+    <strong>Variant A (segmented control)</strong> is the safest bet because it solves the proximity problem completely, uses a proven pattern, and keeps arrows always discoverable. The "Today" button is a nice bonus that the current design lacks.
+    <br><br>
+    <strong>Variant B (hover-reveal)</strong> is worth prototyping as a refinement <em>on top of</em> A — once users learn the date is clickable, you could progressively hide the arrows. But it shouldn't be the starting point because you'll lose the argument on discoverability.
+    <br><br>
+    <strong>Variant D (centered)</strong> is the strongest from an information architecture standpoint, but it's the biggest departure and creates responsive layout challenges. Worth considering for a larger redesign.
+  </div>
+</div>
+
+</body>
+</html>

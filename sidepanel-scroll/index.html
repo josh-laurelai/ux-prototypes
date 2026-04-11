@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Side Panel Scroll + Collapse — Variants</title>
+<style>
+  /* ── Reset & base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; }
+
+  h1 { font-size: 18px; font-weight: 600; padding: 24px 32px 8px; }
+  .variant-label { font-size: 13px; color: #666; padding: 4px 32px 20px; }
+
+  /* ── Shared layout ── */
+  .demo-container {
+    display: flex;
+    height: 380px;
+    margin: 0 32px 40px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    position: relative;
+  }
+
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    background: #fafafa;
+  }
+
+  /* Faux timesheet rows */
+  .entry-group { margin-bottom: 16px; }
+  .entry-group-title {
+    font-size: 13px; font-weight: 600; color: #333;
+    padding: 8px 0 6px;
+    border-bottom: 1px solid #eee;
+    display: flex; justify-content: space-between;
+  }
+  .entry-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .entry-row .name { color: #0066cc; cursor: pointer; }
+  .entry-row .tag { background: #e8f5e9; color: #2e7d32; font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 8px; }
+  .entry-row .hours { color: #888; min-width: 40px; text-align: right; }
+  .entry-row .warn { color: #e65100; font-size: 14px; }
+
+  /* ── Side panel base ── */
+  .side-panel {
+    width: 280px;
+    background: #fff;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease;
+  }
+  .side-panel.collapsed {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    border-left: none;
+  }
+  .panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .panel-header h3 { font-size: 14px; font-weight: 600; }
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+  }
+  .activity-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 12px;
+    color: #555;
+  }
+  .activity-item .time { font-size: 11px; color: #999; }
+  .activity-badge {
+    display: inline-block;
+    background: #333;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .tabs { display: flex; gap: 16px; font-size: 12px; padding: 8px 16px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+  .tabs span { cursor: pointer; padding-bottom: 4px; color: #888; }
+  .tabs span.active { color: #333; border-bottom: 2px solid #333; font-weight: 600; }
+
+  /* ── VARIANT A: Header-integrated close + overlay scrollbar ── */
+  .variant-a .panel-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.15) transparent;
+  }
+  .variant-a .panel-body::-webkit-scrollbar { width: 6px; }
+  .variant-a .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .variant-a .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+  .variant-a .panel-body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+  .close-btn-header {
+    background: none; border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #666; font-size: 16px; transition: background 0.15s;
+  }
+  .close-btn-header:hover { background: #f0f0f0; color: #333; }
+
+  /* Reopen tab for variant A */
+  .reopen-tab-a {
+    position: absolute;
+    right: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height: 64px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #888;
+    font-size: 12px;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: -2px 0 4px rgba(0,0,0,0.04);
+    z-index: 2;
+  }
+  .reopen-tab-a:hover { background: #f5f5f5; color: #333; }
+  .reopen-tab-a.hidden { display: none; }
+
+  /* ── VARIANT B: Edge-integrated toggle (rail) ── */
+  .variant-b { position: relative; }
+  .variant-b .side-panel { border-left: none; }
+
+  .panel-rail {
+    width: 20px;
+    background: #f8f8f8;
+    border-left: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 14px;
+    flex-shrink: 0;
+    z-index: 2;
+  }
+  .rail-toggle {
+    width: 16px; height: 16px;
+    background: none; border: none; cursor: pointer;
+    color: #999; font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .rail-toggle:hover { background: #e8e8e8; color: #333; }
+
+  .variant-b .panel-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+  .variant-b .panel-body::-webkit-scrollbar { width: 5px; }
+  .variant-b .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .variant-b .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+  /* ── VARIANT C: Hover-reveal scrollbar + floating collapse ── */
+  .variant-c .panel-body {
+    overflow-y: scroll;
+    scrollbar-width: none; /* Firefox: hide by default */
+  }
+  .variant-c .panel-body::-webkit-scrollbar { width: 6px; }
+  .variant-c .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .variant-c .panel-body::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; transition: background 0.2s; }
+  .variant-c .side-panel:hover .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); }
+  .variant-c .side-panel:hover .panel-body { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.2) transparent; }
+
+  .floating-collapse {
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #888;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.15s;
+    z-index: 10;
+  }
+  .variant-c .demo-container:hover .floating-collapse,
+  .floating-collapse.always-show { opacity: 1; }
+  .floating-collapse:hover { background: #f0f0f0; color: #333; }
+
+  /* Reopen for variant C */
+  .reopen-tab-c {
+    position: absolute;
+    right: 0; top: 14px;
+    width: 28px; height: 28px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: #888;
+    font-size: 12px;
+    box-shadow: -1px 0 3px rgba(0,0,0,0.05);
+    z-index: 2;
+  }
+  .reopen-tab-c:hover { background: #f5f5f5; color: #333; }
+  .reopen-tab-c.hidden { display: none; }
+
+  /* ── VARIANT D: Resizable drag handle ── */
+  .variant-d .side-panel { border-left: none; }
+
+  .drag-handle {
+    width: 6px;
+    background: transparent;
+    cursor: col-resize;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 5;
+    transition: background 0.15s;
+  }
+  .drag-handle::after {
+    content: '';
+    position: absolute;
+    left: 2px; top: 50%; transform: translateY(-50%);
+    width: 2px; height: 32px;
+    background: #ccc;
+    border-radius: 1px;
+    transition: background 0.15s, height 0.15s;
+  }
+  .drag-handle:hover { background: rgba(0, 102, 204, 0.06); }
+  .drag-handle:hover::after { background: #0066cc; height: 48px; }
+
+  .variant-d .panel-body {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.12) transparent;
+  }
+  .variant-d .panel-body::-webkit-scrollbar { width: 5px; }
+  .variant-d .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .variant-d .panel-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+  .dbl-click-hint {
+    font-size: 10px;
+    color: #aaa;
+    text-align: center;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  /* ── Annotations ── */
+  .annotation {
+    background: #fffde7;
+    border: 1px solid #ffe082;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 0 32px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #555;
+  }
+  .annotation strong { color: #333; }
+
+  .section-divider {
+    border: none;
+    border-top: 2px solid #e0e0e0;
+    margin: 32px 32px 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- VARIANT A -->
+<!-- ════════════════════════════════════════════════ -->
+<h1>Variant A — Close button in panel header + thin overlay scrollbar</h1>
+<p class="variant-label">The most common pattern. Removes the edge conflict entirely.</p>
+<div class="annotation">
+  <strong>How it works:</strong> The collapse control moves into the panel header (an × or chevron). The scrollbar is styled thin (6px) and overlays the content rather than taking layout space. When closed, a subtle tab appears at the edge to reopen.<br>
+  <strong>Tradeoff:</strong> The close button is slightly less discoverable than an edge toggle, but much cleaner. This is what Figma, Linear, and most modern tools do.
+</div>
+
+<div class="demo-container variant-a" id="demoA">
+  <div class="main-content" id="mainA">
+    <!-- Timesheet rows generated by JS -->
+  </div>
+
+  <div class="reopen-tab-a hidden" id="reopenA" onclick="togglePanelA()" title="Open panel">‹</div>
+
+  <div class="side-panel" id="panelA">
+    <div class="panel-header">
+      <h3>Work Activity</h3>
+      <button class="close-btn-header" onclick="togglePanelA()" title="Close panel">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M8 2l5 5-5 5M13 7H1"/>
+        </svg>
+      </button>
+    </div>
+    <div class="tabs"><span class="active">All</span><span>Groups</span><span>Insights</span></div>
+    <div class="panel-body" id="panelBodyA"></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- VARIANT B -->
+<!-- ════════════════════════════════════════════════ -->
+<h1>Variant B — Thin rail separator with integrated toggle</h1>
+<p class="variant-label">A persistent narrow rail between panes holds the toggle. No edge conflict possible.</p>
+<div class="annotation">
+  <strong>How it works:</strong> A 20px "rail" strip sits between the main content and the panel. It holds a small chevron toggle at the top. The scrollbar lives inside the panel, fully separated from the toggle.<br>
+  <strong>Tradeoff:</strong> Uses a tiny bit of horizontal space for the rail, but completely eliminates the scrollbar-vs-toggle collision. Good for apps with lots of resizable panels (VS Code does a version of this).
+</div>
+
+<div class="demo-container variant-b" id="demoB">
+  <div class="main-content" id="mainB"></div>
+
+  <div class="panel-rail" id="railB">
+    <button class="rail-toggle" onclick="togglePanelB()" title="Toggle panel" id="railToggleB">›</button>
+  </div>
+
+  <div class="side-panel" id="panelB">
+    <div class="panel-header">
+      <h3>Work Activity</h3>
+    </div>
+    <div class="tabs"><span class="active">All</span><span>Groups</span><span>Insights</span></div>
+    <div class="panel-body" id="panelBodyB"></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- VARIANT C -->
+<!-- ════════════════════════════════════════════════ -->
+<h1>Variant C — Hover-reveal scrollbar + floating collapse pill</h1>
+<p class="variant-label">Maximum clean look. Scrollbar and collapse button only appear on hover.</p>
+<div class="annotation">
+  <strong>How it works:</strong> The scrollbar is invisible until you hover over the panel. The collapse button is a floating circle on the panel edge — also only visible on hover over the container. This is closest to the Notion / Linear side-peek pattern.<br>
+  <strong>Tradeoff:</strong> Very clean at rest, but both affordances are hidden. Users may not discover the collapse button without exploring. Best if the panel is non-essential and collapsing it is a "nice to have."
+</div>
+
+<div class="demo-container variant-c" id="demoC">
+  <div class="main-content" id="mainC"></div>
+
+  <div class="reopen-tab-c hidden" id="reopenC" onclick="togglePanelC()" title="Open panel">‹</div>
+
+  <div class="side-panel" id="panelC" style="position:relative;">
+    <div class="floating-collapse" id="floatingCollapseC" onclick="togglePanelC()" title="Collapse panel">›</div>
+    <div class="panel-header">
+      <h3>Work Activity</h3>
+    </div>
+    <div class="tabs"><span class="active">All</span><span>Groups</span><span>Insights</span></div>
+    <div class="panel-body" id="panelBodyC"></div>
+  </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- VARIANT D -->
+<!-- ════════════════════════════════════════════════ -->
+<h1>Variant D — Resizable drag handle (double-click to collapse)</h1>
+<p class="variant-label">Power-user pattern. The divider IS the control — drag to resize, double-click to collapse.</p>
+<div class="annotation">
+  <strong>How it works:</strong> A drag handle replaces the static border. Dragging resizes the panel; double-clicking collapses it entirely. A subtle dot indicator shows it's interactive. The scrollbar is fully inside the panel, separated from the handle.<br>
+  <strong>Tradeoff:</strong> Very flexible and space-efficient, but the collapse gesture is completely hidden — you need a tooltip or onboarding hint. This is what VS Code and many IDEs use. Often paired with a View menu toggle as a fallback.
+</div>
+
+<div class="demo-container variant-d" id="demoD">
+  <div class="main-content" id="mainD"></div>
+
+  <div class="drag-handle" id="dragHandleD" title="Drag to resize · Double-click to collapse"></div>
+
+  <div class="side-panel" id="panelD">
+    <div class="panel-header">
+      <h3>Work Activity</h3>
+    </div>
+    <div class="tabs"><span class="active">All</span><span>Groups</span><span>Insights</span></div>
+    <div class="panel-body" id="panelBodyD"></div>
+    <div class="dbl-click-hint">Double-click divider to collapse</div>
+  </div>
+</div>
+
+<div style="height: 60px;"></div>
+
+<script>
+// ── Generate fake data ──
+function makeEntries(container) {
+  const groups = [
+    { name: 'Meetings', tags: ['Product', 'Retention'], entries: ['I met with Miz today', 'Enter narrative', 'Sprint planning sync', 'asdfsdaf'] },
+    { name: 'Strategy', tags: ['Strategy', 'Company'], entries: ['This is a test', 'Enter narrative', 'Enter narrative', 'Q2 planning notes'] },
+    { name: 'RAD · Research', tags: ['RAD', 'Laurel Technology'], entries: ['Did some research', 'User interviews', 'Competitive analysis', 'Enter narrative'] },
+    { name: 'Engineering', tags: ['Eng', 'Platform'], entries: ['Bug fix: auth flow', 'Code review', 'Deploy pipeline'] },
+  ];
+  groups.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'entry-group';
+    div.innerHTML = `<div class="entry-group-title"><span>${g.name}</span><span style="color:#888;font-size:12px">${g.tags.join(' · ')}</span></div>`;
+    g.entries.forEach(e => {
+      div.innerHTML += `<div class="entry-row"><span><span class="name">${e}</span><span class="tag">F151</span></span><span><span class="hours">0.0</span> <span class="warn" style="margin-left:6px">⚠</span></span></div>`;
+    });
+    container.appendChild(div);
+  });
+}
+
+function makeActivities(container) {
+  const items = [
+    { time: '10:19 AM', dur: '1m 17s', label: '10AM' },
+    { time: '10:45 AM', dur: '3m 02s', label: '10:30AM' },
+    { time: '11:10 AM', dur: '45s', label: '11AM' },
+    { time: '11:30 AM', dur: '2m 10s', label: 'Sync' },
+    { time: '12:00 PM', dur: '1m 50s', label: 'Lunch' },
+    { time: '1:15 PM', dur: '4m 22s', label: '1PM' },
+    { time: '2:00 PM', dur: '30s', label: 'Standup' },
+    { time: '2:30 PM', dur: '2m 05s', label: '2:30PM' },
+    { time: '3:00 PM', dur: '1m 12s', label: 'Review' },
+    { time: '3:45 PM', dur: '5m 00s', label: 'Planning' },
+    { time: '4:15 PM', dur: '2m 33s', label: 'Wrap-up' },
+  ];
+  items.forEach(i => {
+    container.innerHTML += `<div class="activity-item"><span class="activity-badge">${i.label}</span><div style="margin-top:4px"><span class="time">${i.time} · ${i.dur}</span></div></div>`;
+  });
+}
+
+// Populate all variants
+['mainA','mainB','mainC','mainD'].forEach(id => makeEntries(document.getElementById(id)));
+['panelBodyA','panelBodyB','panelBodyC','panelBodyD'].forEach(id => makeActivities(document.getElementById(id)));
+
+// ── Variant A toggle ──
+function togglePanelA() {
+  const panel = document.getElementById('panelA');
+  const tab = document.getElementById('reopenA');
+  panel.classList.toggle('collapsed');
+  tab.classList.toggle('hidden');
+}
+
+// ── Variant B toggle ──
+let panelBOpen = true;
+function togglePanelB() {
+  panelBOpen = !panelBOpen;
+  const panel = document.getElementById('panelB');
+  const btn = document.getElementById('railToggleB');
+  panel.classList.toggle('collapsed');
+  btn.textContent = panelBOpen ? '›' : '‹';
+}
+
+// ── Variant C toggle ──
+function togglePanelC() {
+  const panel = document.getElementById('panelC');
+  const tab = document.getElementById('reopenC');
+  const fab = document.getElementById('floatingCollapseC');
+  panel.classList.toggle('collapsed');
+  tab.classList.toggle('hidden');
+  fab.style.display = panel.classList.contains('collapsed') ? 'none' : '';
+}
+
+// ── Variant D drag + double-click ──
+(function() {
+  const handle = document.getElementById('dragHandleD');
+  const panel = document.getElementById('panelD');
+  const container = document.getElementById('demoD');
+  let startX, startWidth, isDragging = false;
+  let panelOpen = true;
+  const savedWidth = 280;
+
+  handle.addEventListener('mousedown', e => {
+    isDragging = true;
+    startX = e.clientX;
+    startWidth = panel.offsetWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const diff = startX - e.clientX;
+    const newWidth = Math.max(120, Math.min(500, startWidth + diff));
+    panel.style.width = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
+
+  handle.addEventListener('dblclick', () => {
+    if (panelOpen) {
+      panel.style.width = '0px';
+      panel.style.minWidth = '0';
+      panel.style.overflow = 'hidden';
+      panel.style.opacity = '0';
+      panel.style.borderLeft = 'none';
+    } else {
+      panel.style.width = '280px';
+      panel.style.minWidth = '';
+      panel.style.overflow = '';
+      panel.style.opacity = '1';
+    }
+    panelOpen = !panelOpen;
+  });
+})();
+</script>
+</body>
+</html>

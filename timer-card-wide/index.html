@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer Card — Wide Layout Exploration</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f0f0;
+    padding: 32px;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #888; margin-bottom: 32px; }
+
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #888; margin-bottom: 6px; margin-top: 48px;
+  }
+  .section-label:first-of-type { margin-top: 24px; }
+  .problem-note {
+    font-size: 13px; color: #666; margin-bottom: 16px; max-width: 700px; line-height: 1.5;
+  }
+
+  /* ---- Shared ---- */
+  .play-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #e8f0fe; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .play-btn svg { width: 16px; height: 16px; fill: #3b82f6; margin-left: 2px; }
+  .play-btn.running { background: #3b82f6; }
+  .play-btn.running svg { fill: #fff; }
+
+  .avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: #ccc;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0;
+  }
+  .kebab { font-size: 16px; color: #aaa; cursor: pointer; letter-spacing: -2px; }
+
+  .tag {
+    font-size: 11px; background: #f3f3f3; border: 1px solid #e0e0e0;
+    border-radius: 4px; padding: 2px 8px; color: #555; white-space: nowrap;
+  }
+
+  .time-display {
+    font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em; color: #1a1a1a;
+  }
+
+  .time-stepper {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; background: #fafafa;
+  }
+  .time-stepper .adj {
+    width: 30px; height: 34px; background: transparent; border: none;
+    cursor: pointer; font-size: 15px; color: #999;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .time-stepper .adj:hover { background: #eee; color: #555; }
+  .time-stepper .adj:first-child { border-right: 1px solid #e0e0e0; }
+  .time-stepper .adj:last-child { border-left: 1px solid #e0e0e0; }
+  .time-stepper .time-display { padding: 0 10px; font-size: 16px; }
+
+  /* ============================================
+     CURRENT: Narrow stacked card (baseline)
+     ============================================ */
+  .card-narrow {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 16px; width: 380px;
+  }
+  .card-narrow .header {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
+  }
+  .card-narrow .matter-name { font-weight: 700; font-size: 15px; }
+  .card-narrow .matter-meta { font-size: 13px; color: #888; margin-top: 1px; }
+  .card-narrow .timer-row { display: flex; align-items: center; gap: 10px; }
+  .card-narrow .desc {
+    font-size: 13px; color: #555; margin-top: 10px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .card-narrow .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  /* ============================================
+     VARIANT 1: Single-row — everything on one line
+     ============================================ */
+  .card-row {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 14px 20px; width: 100%; max-width: 900px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .card-row .matter-info { flex: 1; min-width: 0; }
+  .card-row .matter-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-row .matter-meta { font-size: 12px; color: #888; }
+  .card-row .desc {
+    font-size: 12px; color: #777; flex: 1.5; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .card-row .tags { display: flex; gap: 4px; flex-shrink: 0; }
+  .card-row .timer-section {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .card-row .right-controls {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+
+  /* ============================================
+     VARIANT 2: Two-row wide — header row + content row
+     ============================================ */
+  .card-wide-2row {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 16px 20px; width: 100%; max-width: 900px;
+  }
+  .card-wide-2row .row1 {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 10px;
+  }
+  .card-wide-2row .matter-info { flex: 0 0 auto; }
+  .card-wide-2row .matter-name { font-weight: 700; font-size: 15px; }
+  .card-wide-2row .matter-meta { font-size: 12px; color: #888; }
+  .card-wide-2row .spacer { flex: 1; }
+  .card-wide-2row .timer-section {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .card-wide-2row .right-controls {
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .card-wide-2row .row2 {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding-left: 0;
+  }
+  .card-wide-2row .desc {
+    font-size: 13px; color: #555; line-height: 1.4; flex: 1;
+  }
+  .card-wide-2row .tags { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+
+  /* ============================================
+     VARIANT 3: Three-zone — left info | center description | right timer
+     ============================================ */
+  .card-3zone {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 16px 20px; width: 100%; max-width: 900px;
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: 20px;
+    align-items: center;
+  }
+  .card-3zone .zone-left { }
+  .card-3zone .matter-name { font-weight: 700; font-size: 14px; }
+  .card-3zone .matter-meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .card-3zone .tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .card-3zone .zone-center {
+    font-size: 13px; color: #555; line-height: 1.4; min-width: 0;
+  }
+  .card-3zone .zone-right {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* ============================================
+     VARIANT 4: Responsive — narrow → wide breakpoint
+     ============================================ */
+  .card-responsive {
+    background: #fff; border: 1px solid #ddd; border-radius: 12px;
+    padding: 16px 20px; width: 100%; max-width: 900px;
+    container-type: inline-size;
+  }
+  .card-responsive .layout {
+    /* Default: stacked (narrow) */
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .card-responsive .top-section {
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .card-responsive .matter-name { font-weight: 700; font-size: 15px; }
+  .card-responsive .matter-meta { font-size: 12px; color: #888; }
+  .card-responsive .timer-section {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-responsive .desc {
+    font-size: 13px; color: #555; line-height: 1.4;
+  }
+  .card-responsive .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .card-responsive .bottom-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  /* At wider sizes, switch to horizontal */
+  @container (min-width: 600px) {
+    .card-responsive .layout {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 8px 20px;
+      align-items: center;
+    }
+    .card-responsive .top-section {
+      grid-column: 1; grid-row: 1 / 3;
+      flex-direction: column; align-items: flex-start;
+    }
+    .card-responsive .desc {
+      grid-column: 2; grid-row: 1;
+      align-self: end;
+    }
+    .card-responsive .timer-section {
+      grid-column: 3; grid-row: 1 / 3;
+    }
+    .card-responsive .bottom-row {
+      grid-column: 2; grid-row: 2;
+    }
+    .card-responsive .tags { margin: 0; }
+  }
+
+  /* ---- Demo helpers ---- */
+  .resize-container {
+    border: 2px dashed #ccc; border-radius: 8px; padding: 16px;
+    resize: horizontal; overflow: auto;
+    min-width: 380px; max-width: 100%; width: 900px;
+    margin-bottom: 8px;
+  }
+  .resize-hint {
+    font-size: 11px; color: #aaa; margin-bottom: 16px;
+  }
+
+  .side-by-side {
+    display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;
+  }
+
+  /* selected state */
+  .selected { border-color: #3b82f6; border-width: 2px; }
+</style>
+</head>
+<body>
+
+<h1>Timer Card — Wide Layout Exploration</h1>
+<p class="subtitle">How should the card use horizontal space on larger screens?</p>
+
+<!-- ============ CURRENT BASELINE ============ -->
+<div class="section-label">Current: Narrow Stacked Card (380px)</div>
+<p class="problem-note">
+  Works fine on mobile, but on a wide monitor this wastes space — cards are tall, scannable info is buried, and you can only see a few at a time in a list.
+</p>
+
+<div class="card-narrow">
+  <div class="header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><span class="kebab">⋮</span></div>
+  </div>
+  <div class="timer-row">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="time-stepper">
+      <button class="adj">−</button>
+      <span class="time-display">00:00:00</span>
+      <button class="adj">+</button>
+    </div>
+  </div>
+  <div class="desc">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<!-- ============ VARIANT 1: SINGLE ROW ============ -->
+<div class="section-label">Variant 1 — Full Single Row</div>
+<p class="problem-note">
+  Everything on one line. Maximum density — great for power users scanning a long list.
+  Trade-off: description gets truncated hard, and it can feel cramped.
+  Best for: table-like views, dashboards, "active timers" panels.
+</p>
+
+<div class="card-row">
+  <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+  <div class="matter-info">
+    <div class="matter-name">Matter Name</div>
+    <div class="matter-meta">3333.33333 &nbsp; Laurel</div>
+  </div>
+  <div class="desc">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+  <div class="timer-section">
+    <div class="time-stepper">
+      <button class="adj">−</button>
+      <span class="time-display">00:00:00</span>
+      <button class="adj">+</button>
+    </div>
+  </div>
+  <div class="right-controls">
+    <div class="avatar">B</div>
+    <span class="kebab">⋮</span>
+  </div>
+</div>
+
+<!-- Show a running state too -->
+<div class="card-row selected" style="margin-top:8px;">
+  <button class="play-btn running"><svg viewBox="0 0 24 24"><rect x="7" y="6" width="3" height="12" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/></svg></button>
+  <div class="matter-info">
+    <div class="matter-name">Acme Corp v. Smith Holdings</div>
+    <div class="matter-meta">4521.00100 &nbsp; Laurel</div>
+  </div>
+  <div class="desc">Review of depositions from March 3rd session including witness prep notes...</div>
+  <div class="tags"><span class="tag">L200 Discovery</span><span class="tag">DEP</span></div>
+  <div class="timer-section">
+    <div class="time-stepper">
+      <button class="adj">−</button>
+      <span class="time-display" style="color:#3b82f6; font-weight:600;">01:23:45</span>
+      <button class="adj">+</button>
+    </div>
+  </div>
+  <div class="right-controls">
+    <div class="avatar" style="background:#7c3aed;">K</div>
+    <span class="kebab">⋮</span>
+  </div>
+</div>
+
+
+<!-- ============ VARIANT 2: TWO-ROW WIDE ============ -->
+<div class="section-label">Variant 2 — Two-Row Wide</div>
+<p class="problem-note">
+  Row 1: matter identity + timer (the two things you need to scan). Row 2: description + tags (the context you read when you need it).
+  This preserves hierarchy while using width. Timer anchored to the right creates a consistent scan column.
+</p>
+
+<div class="card-wide-2row">
+  <div class="row1">
+    <div class="matter-info">
+      <div class="matter-name">Matter Name</div>
+      <div class="matter-meta">3333.33333 &nbsp; Laurel</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="timer-section">
+      <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <div class="time-stepper">
+        <button class="adj">−</button>
+        <span class="time-display">00:00:00</span>
+        <button class="adj">+</button>
+      </div>
+    </div>
+    <div class="right-controls">
+      <div class="avatar">B</div>
+      <span class="kebab">⋮</span>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="desc">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nicholas Chen, and external counsel from Morrison & Foerster</div>
+    <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+  </div>
+</div>
+
+<!-- running state -->
+<div class="card-wide-2row selected" style="margin-top:8px;">
+  <div class="row1">
+    <div class="matter-info">
+      <div class="matter-name">Acme Corp v. Smith Holdings</div>
+      <div class="matter-meta">4521.00100 &nbsp; Laurel</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="timer-section">
+      <button class="play-btn running"><svg viewBox="0 0 24 24"><rect x="7" y="6" width="3" height="12" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/></svg></button>
+      <div class="time-stepper">
+        <button class="adj">−</button>
+        <span class="time-display" style="color:#3b82f6; font-weight:600;">01:23:45</span>
+        <button class="adj">+</button>
+      </div>
+    </div>
+    <div class="right-controls">
+      <div class="avatar" style="background:#7c3aed;">K</div>
+      <span class="kebab">⋮</span>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="desc">Review of depositions from March 3rd session including witness prep notes and highlighted contradictions for cross-examination strategy</div>
+    <div class="tags"><span class="tag">L200 Discovery</span><span class="tag">DEP</span><span class="tag">B205</span></div>
+  </div>
+</div>
+
+
+<!-- ============ VARIANT 3: THREE-ZONE GRID ============ -->
+<div class="section-label">Variant 3 — Three-Zone Grid</div>
+<p class="problem-note">
+  Left: identity + tags (who/what). Center: description (context). Right: timer (action).
+  Creates clear columns that align across multiple cards. Excellent for scannability in a list.
+  Trade-off: needs ~700px minimum to breathe.
+</p>
+
+<div class="card-3zone">
+  <div class="zone-left">
+    <div class="matter-name">Matter Name</div>
+    <div class="matter-meta">3333.33333 &nbsp; Laurel</div>
+    <div class="tags"><span class="tag">L110 Facts</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+  </div>
+  <div class="zone-center">
+    Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nicholas Chen, and external counsel from Morrison & Foerster
+  </div>
+  <div class="zone-right">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="time-stepper">
+      <button class="adj">−</button>
+      <span class="time-display">00:00:00</span>
+      <button class="adj">+</button>
+    </div>
+    <div class="avatar">B</div>
+    <span class="kebab">⋮</span>
+  </div>
+</div>
+
+<div class="card-3zone selected" style="margin-top:8px;">
+  <div class="zone-left">
+    <div class="matter-name">Acme Corp v. Smith Holdings</div>
+    <div class="matter-meta">4521.00100 &nbsp; Laurel</div>
+    <div class="tags"><span class="tag">L200 Discovery</span><span class="tag">DEP</span></div>
+  </div>
+  <div class="zone-center">
+    Review of depositions from March 3rd session including witness prep notes and highlighted contradictions for cross-examination strategy
+  </div>
+  <div class="zone-right">
+    <button class="play-btn running"><svg viewBox="0 0 24 24"><rect x="7" y="6" width="3" height="12" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/></svg></button>
+    <div class="time-stepper">
+      <button class="adj">−</button>
+      <span class="time-display" style="color:#3b82f6; font-weight:600;">01:23:45</span>
+      <button class="adj">+</button>
+    </div>
+    <div class="avatar" style="background:#7c3aed;">K</div>
+    <span class="kebab">⋮</span>
+  </div>
+</div>
+
+
+<!-- ============ VARIANT 4: RESPONSIVE ============ -->
+<div class="section-label">Variant 4 — Responsive (Resize Me)</div>
+<p class="problem-note">
+  Same card adapts from narrow stacked layout to wide grid layout.
+  Drag the bottom-right corner to resize. Below ~600px it stacks; above it spreads out.
+  This is probably the right answer if you need to support both mobile and desktop.
+</p>
+
+<div class="resize-container">
+  <div class="card-responsive" style="border:none; padding:0;">
+    <div class="layout">
+      <div class="top-section">
+        <div>
+          <div class="matter-name">Matter Name</div>
+          <div class="matter-meta">3333.33333 &nbsp; Laurel</div>
+          <div class="tags" style="margin-top:6px;"><span class="tag">L110 Facts</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+        </div>
+        <div class="header-right" style="flex-shrink:0;">
+          <div class="avatar">B</div><span class="kebab">⋮</span>
+        </div>
+      </div>
+      <div class="desc">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nicholas Chen, and external counsel from Morrison & Foerster</div>
+      <div class="timer-section">
+        <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="time-stepper">
+          <button class="adj">−</button>
+          <span class="time-display">00:00:00</span>
+          <button class="adj">+</button>
+        </div>
+      </div>
+      <div class="bottom-row">
+      </div>
+    </div>
+  </div>
+</div>
+<div class="resize-hint">↕ Drag the corner to resize and see the breakpoint transition</div>
+
+
+<!-- ============ COMPARISON: LIST OF CARDS ============ -->
+<div class="section-label" style="margin-top:56px;">Comparison: A List of 4 Cards</div>
+<p class="problem-note">
+  The real test: how do these look stacked as a list? Variant 2 (two-row) balances density with readability.
+  Variant 1 (single row) is densest. Variant 3 (three-zone) creates the best column alignment.
+</p>
+
+<div style="display:flex; flex-direction:column; gap:8px; max-width:900px;">
+  <!-- list item 1 - running -->
+  <div class="card-wide-2row selected">
+    <div class="row1">
+      <div class="matter-info">
+        <div class="matter-name">Acme Corp v. Smith Holdings</div>
+        <div class="matter-meta">4521.00100 &nbsp; Laurel</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="timer-section">
+        <button class="play-btn running"><svg viewBox="0 0 24 24"><rect x="7" y="6" width="3" height="12" rx="1"/><rect x="14" y="6" width="3" height="12" rx="1"/></svg></button>
+        <div class="time-stepper">
+          <button class="adj">−</button>
+          <span class="time-display" style="color:#3b82f6; font-weight:600;">01:23:45</span>
+          <button class="adj">+</button>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div class="avatar" style="background:#7c3aed;">K</div>
+        <span class="kebab">⋮</span>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="desc">Review of depositions from March 3rd session including witness prep notes</div>
+      <div class="tags"><span class="tag">L200 Discovery</span><span class="tag">DEP</span></div>
+    </div>
+  </div>
+  <!-- list item 2 -->
+  <div class="card-wide-2row">
+    <div class="row1">
+      <div class="matter-info">
+        <div class="matter-name">Johnson Family Trust</div>
+        <div class="matter-meta">7890.12345 &nbsp; Laurel</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="timer-section">
+        <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="time-stepper">
+          <button class="adj">−</button>
+          <span class="time-display">00:45:00</span>
+          <button class="adj">+</button>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div class="avatar" style="background:#0ea5e9;">M</div>
+        <span class="kebab">⋮</span>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="desc">Drafting amendment to irrevocable trust per beneficiary request from March meeting</div>
+      <div class="tags"><span class="tag">L310 Drafting</span><span class="tag">TRU</span><span class="tag">C400</span></div>
+    </div>
+  </div>
+  <!-- list item 3 -->
+  <div class="card-wide-2row">
+    <div class="row1">
+      <div class="matter-info">
+        <div class="matter-name">Greenfield Acquisition</div>
+        <div class="matter-meta">5555.67890 &nbsp; Laurel</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="timer-section">
+        <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="time-stepper">
+          <button class="adj">−</button>
+          <span class="time-display">00:00:00</span>
+          <button class="adj">+</button>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div class="avatar">B</div>
+        <span class="kebab">⋮</span>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="desc">Due diligence review — environmental compliance documents batch 3 of 7</div>
+      <div class="tags"><span class="tag">L120 Due Diligence</span><span class="tag">ENV</span><span class="tag">A102</span></div>
+    </div>
+  </div>
+  <!-- list item 4 -->
+  <div class="card-wide-2row">
+    <div class="row1">
+      <div class="matter-info">
+        <div class="matter-name">Patent Infringement — TechCo</div>
+        <div class="matter-meta">1234.99999 &nbsp; Laurel</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="timer-section">
+        <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <div class="time-stepper">
+          <button class="adj">−</button>
+          <span class="time-display">02:10:30</span>
+          <button class="adj">+</button>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div class="avatar" style="background:#f59e0b;">S</div>
+        <span class="kebab">⋮</span>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="desc">Claim construction brief — reviewing prior art references and prosecution history</div>
+      <div class="tags"><span class="tag">L220 Motions</span><span class="tag">PAT</span><span class="tag">D100</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Prototypes — Laurel</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #fff;
+    --border: #e8e8e8;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-muted: #a0a0a0;
+    --accent: #1a1a1a;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 48px 32px 32px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  header p {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .grid {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 32px 64px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .proto-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .proto-card:hover {
+    border-color: #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .proto-info { flex: 1; min-width: 0; }
+  .proto-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .proto-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 3px;
+  }
+  .proto-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: 24px;
+  }
+  .proto-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .proto-tag.new {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .proto-arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 24px 0 8px;
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 32px 20px 24px; }
+    .grid { padding: 0 20px 48px; }
+    .proto-card { padding: 16px 18px; }
+    .proto-meta { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>UX Prototypes</h1>
+  <p>Interactive design explorations. Click any prototype to open it.</p>
+</header>
+
+<div class="grid">
+
+  <div class="section-label">Timesheet</div>
+
+  <a href="timesheet-status/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Entry Status Redesign</div>
+      <div class="proto-desc">4 variants for communicating release status — de-emphasis, sub-groups, action bar, focus tabs</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-tag new">New</span>
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <a href="timesheet-header/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Header Restructure</div>
+      <div class="proto-desc">Variants for the timesheet page header layout and hierarchy</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <a href="smart-filters/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Smart Filters</div>
+      <div class="proto-desc">7 overflow pattern explorations — +N more, horizontal scroll, expand/collapse</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <div class="section-label">Layout &amp; Navigation</div>
+
+  <a href="ia-full-layout/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Full IA Layout</div>
+      <div class="proto-desc">Calendar + Timesheet + Activity — full information architecture variants</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <a href="ia-layout/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Three-Panel Timesheet IA</div>
+      <div class="proto-desc">Three-panel layout exploration for timesheet navigation</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <a href="sidepanel-scroll/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Side Panel Scroll &amp; Collapse</div>
+      <div class="proto-desc">Scroll behavior and collapse patterns for side panels</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <div class="section-label">Components</div>
+
+  <a href="timer-card/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Timer Card</div>
+      <div class="proto-desc">Layout variants for the timer card component</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+  <a href="timer-card-wide/" class="proto-card">
+    <div class="proto-info">
+      <div class="proto-title">Timer Card — Wide Layout</div>
+      <div class="proto-desc">Wide format exploration for timer cards</div>
+    </div>
+    <div class="proto-meta">
+      <span class="proto-arrow">→</span>
+    </div>
+  </a>
+
+</div>
+
+</body>
+</html>

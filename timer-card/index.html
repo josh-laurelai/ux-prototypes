@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timer Card — Layout Variants</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f0f0;
+    padding: 32px;
+    color: #1a1a1a;
+  }
+
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 8px;
+    margin-top: 40px;
+  }
+  .section-label:first-of-type { margin-top: 24px; }
+  .problem-note {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 16px;
+    max-width: 520px;
+    line-height: 1.5;
+  }
+
+  /* ---- Shared card styles ---- */
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 16px;
+    width: 380px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .card.selected { border-color: #3b82f6; border-width: 2px; padding: 15px; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .matter-name { font-weight: 700; font-size: 15px; }
+  .matter-meta { font-size: 13px; color: #888; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #ccc; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .kebab { font-size: 18px; color: #aaa; cursor: pointer; letter-spacing: -2px; }
+
+  .description {
+    font-size: 13px; color: #555; margin-top: 12px; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .tags { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .tag {
+    font-size: 11px; background: #f3f3f3; border: 1px solid #e0e0e0;
+    border-radius: 4px; padding: 3px 8px; color: #555;
+  }
+
+  /* ---- Timer elements ---- */
+  .play-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #e8f0fe; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .play-btn svg { width: 18px; height: 18px; fill: #3b82f6; margin-left: 2px; }
+
+  .time-display {
+    font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em; color: #1a1a1a;
+  }
+  .time-display.small { font-size: 18px; }
+
+  .adj-btn {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: #f5f5f5; border: 1px solid #e0e0e0;
+    cursor: pointer; font-size: 16px; color: #666;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .adj-btn:hover { background: #eaeaea; }
+
+  .adj-btn-sm {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: transparent; border: 1px solid #d0d0d0;
+    cursor: pointer; font-size: 14px; color: #999;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .adj-btn-sm:hover { border-color: #999; color: #555; }
+
+  .adj-inline {
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; color: #bbb; padding: 4px;
+    transition: color 0.15s;
+  }
+  .adj-inline:hover { color: #666; }
+
+  /* ---- Layout: Variant A ---- */
+  .timer-row-a {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .time-adjust-group {
+    display: flex; align-items: center; gap: 0;
+    background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 8px;
+    overflow: hidden;
+  }
+  .time-adjust-group .time-display {
+    padding: 4px 12px;
+  }
+  .time-adjust-group .adj-seg {
+    width: 32px; height: 36px; background: transparent;
+    border: none; border-left: 1px solid #e0e0e0;
+    cursor: pointer; font-size: 16px; color: #999;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .time-adjust-group .adj-seg:first-child {
+    border-left: none; border-right: 1px solid #e0e0e0;
+  }
+  .time-adjust-group .adj-seg:hover { background: #eee; }
+
+  /* ---- Layout: Variant B ---- */
+  .timer-row-b {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .timer-row-b .time-display { flex: 0; white-space: nowrap; }
+
+  /* ---- Layout: Variant C ---- */
+  .timer-row-c {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .time-with-adjust {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .adjust-arrows { display: flex; gap: 16px; }
+  .arrow-btn {
+    background: none; border: none; cursor: pointer;
+    color: #bbb; font-size: 10px; padding: 0 4px;
+    transition: color 0.15s;
+  }
+  .arrow-btn:hover { color: #666; }
+
+  /* ---- Layout: Variant D ---- */
+  .timer-row-d {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .timer-row-d .time-display {
+    cursor: pointer;
+    border-bottom: 1px dashed #ccc;
+    padding-bottom: 1px;
+  }
+  .edit-hint {
+    font-size: 11px; color: #aaa; margin-left: 4px;
+  }
+
+  /* ---- Layout: Variant E ---- */
+  .timer-row-e {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .time-pill {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid #e0e0e0; border-radius: 22px;
+    overflow: hidden; background: #fafafa;
+  }
+  .time-pill .adj-pill-btn {
+    width: 36px; height: 36px; background: transparent;
+    border: none; cursor: pointer; font-size: 16px; color: #aaa;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .time-pill .adj-pill-btn:hover { background: #f0f0f0; color: #555; }
+  .time-pill .time-display { padding: 0 6px; font-size: 18px; }
+  .time-pill .divider { width: 1px; height: 20px; background: #e0e0e0; }
+
+  /* columns */
+  .columns { display: flex; gap: 48px; flex-wrap: wrap; }
+  .column { flex: 0 0 auto; }
+</style>
+</head>
+<body>
+
+<h1>Timer Card — +/− Placement Exploration</h1>
+
+<div class="columns">
+<div class="column">
+
+<!-- ============ ORIGINAL PROBLEMS ============ -->
+<div class="section-label">Your Current Variants (Problems)</div>
+<p class="problem-note">
+  All three break the <strong>play → time</strong> reading flow, confuse primary vs. secondary actions, or give +/− too much visual weight. Here's why each fails:
+</p>
+
+<!-- Original 1: − between play and time -->
+<div style="font-size:11px; color:#b44; margin-bottom:4px; font-weight:600;">Problem: − wedged between play and time</div>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div style="display:flex; align-items:center; background:#f5f5f5; border:1px solid #e0e0e0; border-radius:8px; padding:4px 12px; gap:8px;">
+      <span style="font-size:18px; color:#888;">−</span>
+      <span class="time-display small">00:00:00</span>
+      <span style="font-size:18px; color:#888;">+</span>
+    </div>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<!-- Original 3: time then boxed +/- -->
+<div style="font-size:11px; color:#b44; margin-bottom:4px; font-weight:600;">Problem: +/− boxes compete with play button</div>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <span class="time-display small">00:00:00</span>
+    <div style="display:flex; gap:4px;">
+      <button class="adj-btn">−</button>
+      <button class="adj-btn">+</button>
+    </div>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+</div><!-- /column -->
+
+<div class="column">
+
+<!-- ============ PROPOSED SOLUTIONS ============ -->
+<div class="section-label">Variant A — Segmented Control</div>
+<p class="problem-note">
+  Time and +/− are fused into one input-like component. Play stays separate.
+  Clear that +/− adjusts the value, not playback. Reads left→right: action, then value.
+</p>
+<div class="card selected">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div class="timer-row-a">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="time-adjust-group">
+      <button class="adj-seg">−</button>
+      <div class="time-display small" style="padding:4px 14px;">00:00:00</div>
+      <button class="adj-seg" style="border-left:1px solid #e0e0e0; border-right:none;">+</button>
+    </div>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<div class="section-label">Variant B — Ghost Buttons (De-emphasized)</div>
+<p class="problem-note">
+  +/− are borderless, low-contrast ghost buttons next to time. They're discoverable but clearly secondary.
+  Keeps the row clean and uncluttered.
+</p>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div class="timer-row-b">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <button class="adj-inline">−</button>
+    <span class="time-display">00:00:00</span>
+    <button class="adj-inline">+</button>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<div class="section-label">Variant C — Stacked Arrows (Stepper)</div>
+<p class="problem-note">
+  Small up/down arrows sit beneath the time like a numeric stepper.
+  This unmistakably reads as "adjust this value" and takes almost no horizontal space.
+</p>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div class="timer-row-c">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="time-with-adjust">
+      <span class="time-display">00:00:00</span>
+      <div class="adjust-arrows">
+        <button class="arrow-btn">▼ less</button>
+        <button class="arrow-btn">▲ more</button>
+      </div>
+    </div>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<div class="section-label">Variant D — Editable Time (No +/−)</div>
+<p class="problem-note">
+  Eliminates +/− entirely. The time is directly clickable/editable (dashed underline hint).
+  This is the cleanest option — ask yourself if +/− is even the right interaction.
+</p>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div class="timer-row-d">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <span class="time-display" title="Click to edit">00:00:00</span>
+    <span class="edit-hint">click to edit</span>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+<div class="section-label">Variant E — Pill with Integrated Steppers</div>
+<p class="problem-note">
+  Similar to A but rounded/pill-shaped. The whole thing reads as one cohesive "time input" widget,
+  clearly separated from the play action. Dividers reinforce the segmented affordance.
+</p>
+<div class="card">
+  <div class="card-header">
+    <div><div class="matter-name">Matter Name</div><div class="matter-meta">3333.33333 &nbsp; Laurel</div></div>
+    <div class="header-right"><div class="avatar">B</div><div class="kebab">⋮</div></div>
+  </div>
+  <div class="timer-row-e">
+    <button class="play-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="time-pill">
+      <button class="adj-pill-btn">−</button>
+      <div class="divider"></div>
+      <span class="time-display">00:00:00</span>
+      <div class="divider"></div>
+      <button class="adj-pill-btn">+</button>
+    </div>
+  </div>
+  <div class="description">Conference regarding All Hands Crunch Update with Kris Andrews, Vince Huang, Nic...</div>
+  <div class="tags"><span class="tag">L110 Facts / Investigation</span><span class="tag">WOR</span><span class="tag">A102</span></div>
+</div>
+
+</div><!-- /column -->
+</div><!-- /columns -->
+
+</body>
+</html>
