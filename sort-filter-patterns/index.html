@@ -390,11 +390,11 @@
         </div>
         <div class="ts-toolbar-right">
           <div class="sort-dropdown">
-            <button class="btn active" id="cur-sort-btn" onclick="toggleMenu('cur-sort-menu')">
-              <span class="icon">↕</span> Sort: Hours ↓
+            <button class="btn" id="cur-sort-btn" onclick="toggleMenu('cur-sort-menu')">
+              <span class="icon">↕</span> Sort
             </button>
             <div class="sort-menu" id="cur-sort-menu">
-              <div class="sort-menu-item active" onclick="setCurSort('hours-desc')">Hours (high → low) ✓</div>
+              <div class="sort-menu-item" onclick="setCurSort('hours-desc')">Hours (high → low)</div>
               <div class="sort-menu-item" onclick="setCurSort('hours-asc')">Hours (low → high)</div>
               <div class="sort-menu-item" onclick="setCurSort('status')">By Status</div>
               <div class="sort-menu-item" onclick="setCurSort('alpha')">Alphabetical</div>
@@ -700,11 +700,11 @@ document.addEventListener('click', e => {
 });
 
 // === CURRENT: Always-active ===
-let curSortType = 'hours-desc';
+let curSortType = 'default';
 let curData = [...ENTRIES];
 
 function initCurrent() {
-  curData = sortEntriesWithinProjects(ENTRIES, curSortType);
+  curData = [...ENTRIES];
   renderEntries('cur-entries', curData, { dragEnabled: false });
 }
 
