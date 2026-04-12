@@ -755,32 +755,51 @@ function doOneShot(type) {
 let asSortType = 'manual';
 let asKeepSorted = false;
 let asData = [...ENTRIES];
+let asManualOrder = [...ENTRIES]; // preserved manual order to restore when sort is removed
 
 function initAutoSort() {
   asData = [...ENTRIES];
+  asManualOrder = [...ENTRIES];
   renderEntries('as-entries', asData, { dragEnabled: true });
+}
+
+// Capture current DOM order as the manual order (after drag-drop reordering)
+function captureManualOrder() {
+  const rows = document.querySelectorAll('#as-entries .entry-row');
+  const newOrder = [];
+  rows.forEach(row => {
+    const idx = parseInt(row.getAttribute('data-idx'));
+    if (!isNaN(idx)) newOrder.push(ENTRIES[idx]);
+  });
+  if (newOrder.length === ENTRIES.length) asManualOrder = newOrder;
 }
 
 function setAutoSort(type) {
   closeAllMenus();
-  asSortType = type;
   const btn = document.getElementById('as-sort-btn');
   const toggleRow = document.getElementById('as-toggle-row');
 
+  // If leaving a sort and going back to manual, restore saved manual order
   if (type === 'manual') {
+    asSortType = type;
     btn.classList.remove('active');
     btn.innerHTML = '<span class="icon">↕</span> Sort: Manual';
     toggleRow.style.display = 'none';
     asKeepSorted = false;
     document.getElementById('as-toggle').classList.remove('on');
-    asData = [...ENTRIES];
+    asData = [...asManualOrder];
     renderEntries('as-entries', asData, { dragEnabled: true });
   } else {
+    // Save manual order before applying sort (only if currently in manual)
+    if (asSortType === 'manual') {
+      captureManualOrder();
+    }
+    asSortType = type;
     const labels = { 'hours-desc': 'Hours ↓', 'hours-asc': 'Hours ↑', status: 'Status', alpha: 'A→Z' };
     btn.classList.add('active');
     btn.innerHTML = `<span class="icon">↕</span> Sort: ${labels[type]}`;
     toggleRow.style.display = '';
-    asData = sortEntriesWithinProjects(ENTRIES, type);
+    asData = sortEntriesWithinProjects(asManualOrder, type);
 
     if (asKeepSorted) {
       const badges = { 'hours-desc': '↓ hours (live)', 'hours-asc': '↑ hours (live)', status: '↓ status (live)', alpha: '↓ A-Z (live)' };
