@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity Detail Views — DES-115</title>
+<style>
+/* === TOKENS === */
+:root {
+  --bg: #f5f5f4;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --text: #1c1917;
+  --text-secondary: #57534e;
+  --text-muted: #a8a29e;
+  --accent: #f97316;
+  --accent-bg: #fff7ed;
+  --accent-border: #fed7aa;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --blue: #3b82f6;
+  --blue-bg: #eff6ff;
+  --green: #22c55e;
+  --green-bg: #f0fdf4;
+  --red: #ef4444;
+  --red-bg: #fef2f2;
+  --yellow: #eab308;
+  --yellow-bg: #fefce8;
+  --sidebar-bg: #1c1917;
+  --sidebar-icon: #a8a29e;
+  --sidebar-icon-active: #ffffff;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-sm: 4px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.18);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; }
+
+/* === VARIANT NAV === */
+.variant-nav {
+  position: sticky; top: 0; z-index: 200;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  display: flex; align-items: stretch; gap: 0;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 14px 20px; font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); cursor: pointer;
+  border: none; border-bottom: 2px solid transparent;
+  background: none; font-family: inherit; white-space: nowrap;
+  transition: all 0.15s;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-description {
+  margin-left: auto;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  font-size: 12px; color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* === PANELS === */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* === APP SHELL === */
+.app-shell {
+  display: flex;
+  height: calc(100vh - 49px);
+  overflow: hidden;
+}
+.app-sidebar {
+  width: 56px;
+  background: var(--sidebar-bg);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 0; gap: 4px; flex-shrink: 0;
+}
+.sidebar-logo {
+  width: 32px; height: 32px; background: var(--accent);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; color: #fff; font-weight: 700; font-size: 14px;
+}
+.sidebar-icon {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; color: var(--sidebar-icon); cursor: default;
+}
+.sidebar-icon.active { color: var(--sidebar-icon-active); background: rgba(255,255,255,0.1); }
+.sidebar-icon svg { width: 20px; height: 20px; }
+.sidebar-spacer { flex: 1; }
+
+.app-main {
+  flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden;
+}
+
+/* Header */
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border); gap: 16px; flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header-date h2 { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.header-date h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.header-nav { display: flex; align-items: center; gap: 4px; }
+.header-nav-btn {
+  width: 32px; height: 32px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface);
+  color: var(--text-secondary); display: flex; align-items: center;
+  justify-content: center; cursor: default; font-size: 14px;
+}
+.header-stats { display: flex; align-items: center; gap: 20px; }
+.stat { display: flex; align-items: baseline; gap: 4px; }
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.stat-value { font-size: 15px; font-weight: 700; }
+.stat-target { font-size: 12px; color: var(--text-muted); }
+
+/* Content area */
+.app-content { flex: 1; display: flex; overflow: hidden; }
+
+/* === TIMESHEET === */
+.timesheet-area { flex: 1; overflow-y: auto; padding: 20px 24px; min-width: 0; }
+.timesheet-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px;
+}
+.toolbar-left { display: flex; align-items: center; gap: 8px; }
+.toolbar-count { font-size: 13px; color: var(--text-secondary); }
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+.btn-sm {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; font-family: inherit;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-secondary); cursor: default; white-space: nowrap;
+}
+.btn-sm svg { width: 14px; height: 14px; }
+
+.matter-group {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); margin-bottom: 12px; overflow: hidden;
+}
+.matter-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid var(--border); gap: 12px;
+}
+.matter-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.matter-name { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.matter-client { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
+.matter-total { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+
+.entry-row {
+  display: flex; align-items: flex-start; padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0; gap: 12px; cursor: pointer; transition: background 0.1s;
+}
+.entry-row:last-child { border-bottom: none; }
+.entry-row:hover { background: #fafaf9; }
+.entry-hours { font-size: 14px; font-weight: 600; width: 32px; flex-shrink: 0; padding-top: 1px; }
+.entry-body { flex: 1; min-width: 0; }
+.entry-narrative { font-size: 13px; color: var(--text); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.entry-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.entry-tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.tag-code { background: #f3f4f6; color: var(--text-secondary); }
+.tag-status-missing { background: var(--yellow-bg); color: #a16207; }
+.tag-status-review { background: var(--blue-bg); color: #1d4ed8; }
+.tag-status-ready { background: var(--green-bg); color: #15803d; }
+.add-entry-row { padding: 8px 16px; font-size: 12px; color: var(--text-muted); cursor: default; }
+
+/* === ACTIVITY PANEL (shared base) === */
+.activity-panel {
+  width: 360px; background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+  position: relative;
+}
+.activity-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.activity-title { font-size: 15px; font-weight: 700; }
+.activity-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.activity-search {
+  margin: 12px 16px; padding: 7px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 12px; font-family: inherit; color: var(--text-secondary);
+  width: calc(100% - 32px); outline: none;
+}
+.activity-list { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+.activity-count { font-size: 12px; color: var(--text-muted); padding: 8px 0 12px; }
+
+/* Activity item — base */
+.activity-item {
+  display: flex; gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-item:hover { background: #fafaf9; }
+.activity-item.selected { background: var(--blue-bg); }
+.activity-checkbox {
+  width: 16px; height: 16px; border: 2px solid var(--border-strong);
+  border-radius: 3px; flex-shrink: 0; margin-top: 2px;
+}
+.activity-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px;
+}
+.activity-icon.call { background: var(--blue-bg); color: var(--blue); }
+.activity-icon.email { background: var(--purple-bg); color: var(--purple); }
+.activity-icon.doc { background: var(--accent-bg); color: var(--accent); }
+.activity-icon.meeting { background: var(--green-bg); color: var(--green); }
+.activity-icon.web { background: #f0f9ff; color: #0ea5e9; }
+.activity-body { flex: 1; min-width: 0; }
+.activity-text { font-size: 12px; color: var(--text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* === SVG ICONS REUSED === */
+.icon-phone { display: inline; }
+.icon-email { display: inline; }
+.icon-doc { display: inline; }
+.icon-meeting { display: inline; }
+
+
+/* =====================================================
+   VARIANT A: INLINE ACCORDION
+   ===================================================== */
+.accordion-detail {
+  display: none;
+  padding: 0 0 12px 54px; /* align with activity-body (checkbox 16 + gap 10 + icon 28 = 54) */
+  animation: accordionOpen 0.2s ease;
+}
+.accordion-detail.open { display: block; }
+
+@keyframes accordionOpen {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.detail-card {
+  background: #fafaf9;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.detail-row + .detail-row { border-top: 1px solid #f0f0f0; }
+.detail-label {
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 11px;
+  padding-top: 1px;
+}
+.detail-value {
+  flex: 1;
+  color: var(--text);
+  min-width: 0;
+  font-size: 12px;
+}
+.detail-value a {
+  color: var(--blue);
+  text-decoration: none;
+}
+.detail-value a:hover { text-decoration: underline; }
+
+.detail-snippet {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-height: 80px;
+  overflow: hidden;
+  position: relative;
+}
+.detail-snippet::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 24px;
+  background: linear-gradient(transparent, #fff);
+}
+
+.detail-participants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.participant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.participant-chip .avatar {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  font-size: 8px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.participant-overflow {
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.detail-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.detail-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.tag-sent { background: var(--green-bg); color: #15803d; }
+.tag-read { background: var(--blue-bg); color: #1d4ed8; }
+.tag-draft { background: var(--yellow-bg); color: #a16207; }
+.tag-inbox { background: #f3f4f6; color: var(--text-secondary); }
+.tag-attachment { background: #f3f4f6; color: var(--text-secondary); }
+.tag-inbound { background: var(--blue-bg); color: #1d4ed8; }
+.tag-outbound { background: var(--purple-bg); color: #6d28d9; }
+.tag-answered { background: var(--green-bg); color: #15803d; }
+.tag-voicemail { background: var(--yellow-bg); color: #a16207; }
+.tag-required { background: var(--accent-bg); color: #c2410c; }
+.tag-optional { background: #f3f4f6; color: var(--text-secondary); }
+
+/* Expand chevron */
+.expand-chevron {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+  margin-top: 4px;
+}
+.activity-item.expanded .expand-chevron { transform: rotate(90deg); color: var(--text-secondary); }
+
+
+/* =====================================================
+   VARIANT B: DRILL-IN PANEL
+   ===================================================== */
+.drill-panel-wrapper {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.drill-list-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.drill-list-view.hidden {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drill-detail-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+.drill-detail-view.visible {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drill-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  border-top: none; border-left: none; border-right: none;
+  font-family: inherit;
+  transition: background 0.1s;
+  flex-shrink: 0;
+}
+.drill-back-btn:hover { background: var(--blue-bg); }
+.drill-back-btn svg { width: 14px; height: 14px; }
+
+.drill-detail-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.drill-detail-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.drill-detail-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+.drill-detail-icon.call { background: var(--blue-bg); color: var(--blue); }
+.drill-detail-icon.email { background: var(--purple-bg); color: var(--purple); }
+.drill-detail-icon.doc { background: var(--accent-bg); color: var(--accent); }
+.drill-detail-icon.meeting { background: var(--green-bg); color: var(--green); }
+.drill-detail-icon.web { background: #f0f9ff; color: #0ea5e9; }
+
+.drill-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.drill-detail-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.drill-section {
+  margin-bottom: 16px;
+}
+.drill-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.drill-detail-row {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  border-bottom: 1px solid #f5f5f4;
+}
+.drill-detail-row:last-child { border-bottom: none; }
+.drill-detail-label {
+  width: 64px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+.drill-detail-value {
+  flex: 1;
+  color: var(--text);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.drill-participant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drill-participant {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+.drill-participant .avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.drill-participant-info {
+  flex: 1;
+  min-width: 0;
+}
+.drill-participant-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+.drill-participant-email {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.drill-participant-role {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #f3f4f6;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.drill-snippet {
+  padding: 10px 12px;
+  background: #fafaf9;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-height: 120px;
+  overflow: hidden;
+  position: relative;
+}
+.drill-snippet::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 28px;
+  background: linear-gradient(transparent, #fafaf9);
+}
+.drill-snippet-toggle {
+  font-size: 11px;
+  color: var(--blue);
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.drill-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drill-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #fafaf9;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text);
+}
+.drill-attachment-icon {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.drill-attachment-size {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+
+/* =====================================================
+   VARIANT C: SLIDE-OVER DRAWER (overlays feed)
+   ===================================================== */
+.drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+.drawer-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  background: var(--surface);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.drawer-panel.visible {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-close {
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 14px;
+  transition: background 0.1s;
+}
+.drawer-close:hover { background: #f5f5f4; }
+
+.drawer-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.drawer-type-icon {
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.drawer-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.drawer-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* Keyboard hint */
+.keyboard-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #fafaf9;
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: inherit;
+}
+
+/* Nav arrows in drawer */
+.drawer-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.drawer-nav-btn {
+  width: 28px; height: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  transition: background 0.1s;
+}
+.drawer-nav-btn:hover { background: #f5f5f4; }
+
+
+/* =====================================================
+   NOTES PANEL (design annotations)
+   ===================================================== */
+.notes-bar {
+  background: #1c1917;
+  color: #e5e5e5;
+  padding: 12px 32px;
+  font-size: 12px;
+  line-height: 1.6;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.notes-bar strong { color: #fff; font-weight: 600; }
+.notes-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  white-space: nowrap;
+  padding-top: 1px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     VARIANT NAV
+     ============================================================ -->
+<nav class="variant-nav">
+  <button class="nav-tab active" onclick="switchPanel('accordion')">A: Inline Accordion</button>
+  <button class="nav-tab" onclick="switchPanel('drill')">B: Drill-In Panel</button>
+  <button class="nav-tab" onclick="switchPanel('drawer')">C: Slide-Over Drawer</button>
+  <span class="nav-description">DES-115 · Activity Detail Views</span>
+</nav>
+
+
+<!-- ============================================================
+     VARIANT A: INLINE ACCORDION
+     Click an activity row and it expands in-place to show detail
+     ============================================================ -->
+<div class="panel active" id="panel-accordion">
+<div class="notes-bar">
+  <span class="notes-label">Tradeoffs</span>
+  <span>Keeps user in the feed flow — good for quick scanning. But the panel is 360px wide, so dense content (email snippets, long participant lists) gets tight. Multiple activities can be open simultaneously. Works well for meeting/call metadata, may struggle with email body content.</span>
+</div>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">L</div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+    <div class="sidebar-spacer"></div>
+  </aside>
+  <div class="app-main">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="header-nav"><div class="header-nav-btn">‹</div><div class="header-nav-btn">›</div></div>
+        <div class="header-date"><h2>Wednesday</h2><h1>April 8</h1></div>
+      </div>
+      <div class="header-stats">
+        <div class="stat"><span class="stat-label">Week</span><span class="stat-value">6.5</span><span class="stat-target">of 8.5</span></div>
+        <div class="stat"><span class="stat-label">Day</span><span class="stat-value">5.0</span><span class="stat-target">of 5.0</span></div>
+      </div>
+    </header>
+    <div class="app-content">
+      <!-- Timesheet (abbreviated) -->
+      <div class="timesheet-area">
+        <div class="timesheet-toolbar">
+          <div class="toolbar-left"><span class="toolbar-count">5 entries</span></div>
+          <div class="toolbar-right"><div class="btn-sm">+ Create Entry</div></div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--accent);"></div>
+            <span class="matter-name">Anderson & Co. Litigation</span>
+            <span class="matter-client">Anderson Corp</span>
+            <span class="matter-total">2.3</span>
+          </div>
+          <div class="entry-row">
+            <span class="entry-hours">0.5</span>
+            <div class="entry-body">
+              <div class="entry-narrative">Conference regarding deposition preparation with witness panel, Avery Anderson and Lisa Griffin.</div>
+              <div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A105</span></div>
+            </div>
+          </div>
+          <div class="entry-row">
+            <span class="entry-hours">1.0</span>
+            <div class="entry-body">
+              <div class="entry-narrative">Draft mutual action plan document for Wright Lindsay Jennings. Outlined key milestones through Q3.</div>
+              <div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A106</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--blue);"></div>
+            <span class="matter-name">PRES | Meetings</span>
+            <span class="matter-client">Laurel Technology</span>
+            <span class="matter-total">1.1</span>
+          </div>
+          <div class="entry-row">
+            <span class="entry-hours">1.0</span>
+            <div class="entry-body">
+              <div class="entry-narrative">Confer with Cahill Gordon & Reindel regarding firmwide proposal and implementation timeline.</div>
+              <div class="entry-meta"><span class="entry-tag tag-code">A103</span><span class="entry-tag tag-status-review">Ready for Review</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Panel: Accordion variant -->
+      <aside class="activity-panel" id="accordionPanel">
+        <div class="activity-header">
+          <div>
+            <div class="activity-title">Work Activity</div>
+            <div class="activity-subtitle">10s · Activities · Threading</div>
+          </div>
+        </div>
+        <input class="activity-search" type="text" placeholder="Search..." disabled>
+        <div class="activity-list" id="accordionList">
+          <div class="activity-count">7 Activities</div>
+
+          <!-- EMAIL — expanded by default to demo -->
+          <div class="activity-item expanded" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon email">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Correspondence regarding firmwide proposal with Cahill Gordon & Reindel</div>
+              <div class="activity-time">1:15pm · 12m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail open">
+            <div class="detail-card">
+              <div class="detail-tags" style="margin-top:0; margin-bottom: 8px;">
+                <span class="detail-tag tag-sent">Sent</span>
+                <span class="detail-tag tag-attachment">1 attachment</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subject</span>
+                <span class="detail-value">Re: Firmwide Proposal — Updated Pricing & Timeline</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">From</span>
+                <span class="detail-value">You</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">To</span>
+                <span class="detail-value">
+                  <div class="detail-participants">
+                    <span class="participant-chip"><span class="avatar" style="background:#8b5cf6;">PB</span> Paul Bertram</span>
+                    <span class="participant-chip"><span class="avatar" style="background:#3b82f6;">SC</span> Sarah Chen</span>
+                    <span class="participant-overflow">+2 others</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-snippet">
+                Paul — Attached is the revised pricing schedule we discussed on the call last week. Key changes: (1) reduced onboarding fee per the volume discount, (2) adjusted timeline to reflect Q3 start instead of Q2, (3) added the supplemental training module Sarah requested. Let me know if you need anything else before the…
+              </div>
+            </div>
+          </div>
+
+          <!-- MEETING — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon meeting">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">User selection re: EY Tax Group — participant list and scheduling</div>
+              <div class="activity-time">11:30am · 30m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-tags" style="margin-top:0; margin-bottom: 8px;">
+                <span class="detail-tag tag-required">You: Required</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subject</span>
+                <span class="detail-value">EY Tax Group — User Selection & Onboarding Sync</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Organizer</span>
+                <span class="detail-value">Matthew Newnes</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Attendees</span>
+                <span class="detail-value">
+                  <div class="detail-participants">
+                    <span class="participant-chip"><span class="avatar" style="background:#22c55e;">MN</span> Matthew Newnes</span>
+                    <span class="participant-chip"><span class="avatar" style="background:#f97316;">LC</span> Lyndsey Cassie</span>
+                    <span class="participant-chip"><span class="avatar" style="background:#3b82f6;">EZ</span> Eric Ziamour</span>
+                  </div>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CALL — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon call">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Conference regarding intelligent onboarding with EY Tax Group via Teams</div>
+              <div class="activity-time">2:00pm · 30m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-tags" style="margin-top:0; margin-bottom: 8px;">
+                <span class="detail-tag tag-outbound">Outbound</span>
+                <span class="detail-tag tag-answered">Answered</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Topic</span>
+                <span class="detail-value">Intelligent Onboarding — Phase 2 Planning</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">With</span>
+                <span class="detail-value">
+                  <div class="detail-participants">
+                    <span class="participant-chip"><span class="avatar" style="background:#22c55e;">MN</span> Matthew Newnes</span>
+                    <span class="participant-chip"><span class="avatar" style="background:#f97316;">LC</span> Lyndsey Cassie</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Platform</span>
+                <span class="detail-value">Microsoft Teams</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOCUMENT — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon doc">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Mutual action plan for Wright Lindsay Jennings — Q3 milestones</div>
+              <div class="activity-time">9:15am · 45m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-row" style="border-top:none;">
+                <span class="detail-label">File</span>
+                <span class="detail-value" style="font-weight:500;">WLJ_Mutual_Action_Plan_Q3_2026.docx</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Path</span>
+                <span class="detail-value" style="font-size:11px; color: var(--text-muted);">C:\Users\jmahoney\Documents\Clients\WLJ\</span>
+              </div>
+              <div class="detail-snippet">
+                Mutual Action Plan — Wright Lindsay Jennings — Q3 2026
+
+                1. Milestone: Complete phase 1 user rollout by July 15
+                2. Milestone: Achieve 80% weekly adoption rate across all timekeepers by August 1
+                3. Deliverable: Custom reporting dashboard configured and validated by July 30
+                4. Review: Quarterly business review scheduled for September 12…
+              </div>
+            </div>
+          </div>
+
+          <!-- WEBSITE — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon web" style="background: #f0f9ff; color: #0ea5e9;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Research on WestLaw — case precedent for Anderson deposition</div>
+              <div class="activity-time">3:15pm · 18m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-row" style="border-top:none;">
+                <span class="detail-label">Tab</span>
+                <span class="detail-value">Anderson v. Pacific Holdings — Case Summary | WestLaw</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">URL</span>
+                <span class="detail-value"><a href="#">westlaw.com/Document/I3a8e…</a></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Client</span>
+                <span class="detail-value">WestLaw (Thomson Reuters)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- EMAIL 2 — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon email">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Pricing proposal planning for Cahill Gordon & Reindel</div>
+              <div class="activity-time">10:45am · 8m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-tags" style="margin-top:0; margin-bottom: 8px;">
+                <span class="detail-tag tag-read">Read</span>
+                <span class="detail-tag tag-inbox">Inbox</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subject</span>
+                <span class="detail-value">Pricing Proposal — Internal Review Needed</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">From</span>
+                <span class="detail-value">
+                  <span class="participant-chip"><span class="avatar" style="background:#8b5cf6;">PB</span> Paul Bertram</span>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">To</span>
+                <span class="detail-value">You, Sarah Chen</span>
+              </div>
+              <div class="detail-snippet">
+                Team — I've drafted an initial pricing proposal for the Cahill Gordon engagement. Before I send it over, I'd like your input on a couple of things: (1) Should we include the premium support tier in the initial offer or hold it as an upsell? (2) The training hours estimate feels high — can…
+              </div>
+            </div>
+          </div>
+
+          <!-- CALL 2 — collapsed -->
+          <div class="activity-item" onclick="toggleAccordion(this)">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon call">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            </div>
+            <div class="activity-body">
+              <div class="activity-text">Conference regarding Mary Jennings deposition with interview panel</div>
+              <div class="activity-time">10:00am · 45m</div>
+            </div>
+            <div class="expand-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="accordion-detail">
+            <div class="detail-card">
+              <div class="detail-tags" style="margin-top:0; margin-bottom: 8px;">
+                <span class="detail-tag tag-inbound">Inbound</span>
+                <span class="detail-tag tag-answered">Answered</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Topic</span>
+                <span class="detail-value">Mary Jennings Deposition — Witness Prep</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Caller</span>
+                <span class="detail-value">
+                  <span class="participant-chip"><span class="avatar" style="background:#ef4444;">AA</span> Avery Anderson</span>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Others</span>
+                <span class="detail-value">
+                  <div class="detail-participants">
+                    <span class="participant-chip"><span class="avatar" style="background:#8b5cf6;">LG</span> Lisa Griffin</span>
+                    <span class="participant-chip"><span class="avatar" style="background:#22c55e;">MJ</span> Mary Jennings</span>
+                  </div>
+                </span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Platform</span>
+                <span class="detail-value">Zoom</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ============================================================
+     VARIANT B: DRILL-IN PANEL
+     The activity list slides away; a detail view slides in from the right
+     ============================================================ -->
+<div class="panel" id="panel-drill">
+<div class="notes-bar">
+  <span class="notes-label">Tradeoffs</span>
+  <span>Full panel width for detail content — great for emails with body snippets, meetings with many attendees. Clear information hierarchy with sections. But you lose sight of the feed list while viewing detail, so comparing activities requires back-and-forth navigation. Best if users typically inspect one activity at a time rather than scanning across several.</span>
+</div>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">L</div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+    <div class="sidebar-spacer"></div>
+  </aside>
+  <div class="app-main">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="header-nav"><div class="header-nav-btn">‹</div><div class="header-nav-btn">›</div></div>
+        <div class="header-date"><h2>Wednesday</h2><h1>April 8</h1></div>
+      </div>
+      <div class="header-stats">
+        <div class="stat"><span class="stat-label">Week</span><span class="stat-value">6.5</span><span class="stat-target">of 8.5</span></div>
+        <div class="stat"><span class="stat-label">Day</span><span class="stat-value">5.0</span><span class="stat-target">of 5.0</span></div>
+      </div>
+    </header>
+    <div class="app-content">
+      <div class="timesheet-area">
+        <div class="timesheet-toolbar">
+          <div class="toolbar-left"><span class="toolbar-count">5 entries</span></div>
+          <div class="toolbar-right"><div class="btn-sm">+ Create Entry</div></div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--accent);"></div>
+            <span class="matter-name">Anderson & Co. Litigation</span>
+            <span class="matter-client">Anderson Corp</span>
+            <span class="matter-total">2.3</span>
+          </div>
+          <div class="entry-row"><span class="entry-hours">0.5</span><div class="entry-body"><div class="entry-narrative">Conference regarding deposition preparation with witness panel, Avery Anderson and Lisa Griffin.</div><div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A105</span></div></div></div>
+          <div class="entry-row"><span class="entry-hours">1.0</span><div class="entry-body"><div class="entry-narrative">Draft mutual action plan document for Wright Lindsay Jennings.</div><div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A106</span></div></div></div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--blue);"></div>
+            <span class="matter-name">PRES | Meetings</span>
+            <span class="matter-client">Laurel Technology</span>
+            <span class="matter-total">1.1</span>
+          </div>
+          <div class="entry-row"><span class="entry-hours">1.0</span><div class="entry-body"><div class="entry-narrative">Confer with Cahill Gordon & Reindel regarding firmwide proposal.</div><div class="entry-meta"><span class="entry-tag tag-code">A103</span><span class="entry-tag tag-status-review">Ready for Review</span></div></div></div>
+        </div>
+      </div>
+
+      <!-- Activity Panel: Drill-in variant -->
+      <aside class="activity-panel" id="drillPanel">
+        <div class="activity-header">
+          <div>
+            <div class="activity-title">Work Activity</div>
+            <div class="activity-subtitle">10s · Activities · Threading</div>
+          </div>
+        </div>
+
+        <div class="drill-panel-wrapper">
+          <!-- LIST VIEW -->
+          <div class="drill-list-view" id="drillListView">
+            <input class="activity-search" type="text" placeholder="Search..." disabled>
+            <div class="activity-list">
+              <div class="activity-count">7 Activities</div>
+
+              <div class="activity-item" data-drill="email-1" onclick="drillIn(this, 'email-1')">
+                <div class="activity-checkbox"></div>
+                <div class="activity-icon email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+                <div class="activity-body">
+                  <div class="activity-text">Correspondence regarding firmwide proposal with Cahill Gordon & Reindel</div>
+                  <div class="activity-time">1:15pm · 12m</div>
+                </div>
+              </div>
+
+              <div class="activity-item" data-drill="meeting-1" onclick="drillIn(this, 'meeting-1')">
+                <div class="activity-checkbox"></div>
+                <div class="activity-icon meeting"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                <div class="activity-body">
+                  <div class="activity-text">User selection re: EY Tax Group — participant list and scheduling</div>
+                  <div class="activity-time">11:30am · 30m</div>
+                </div>
+              </div>
+
+              <div class="activity-item" data-drill="call-1" onclick="drillIn(this, 'call-1')">
+                <div class="activity-checkbox"></div>
+                <div class="activity-icon call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+                <div class="activity-body">
+                  <div class="activity-text">Conference regarding intelligent onboarding with EY Tax Group via Teams</div>
+                  <div class="activity-time">2:00pm · 30m</div>
+                </div>
+              </div>
+
+              <div class="activity-item" data-drill="doc-1" onclick="drillIn(this, 'doc-1')">
+                <div class="activity-checkbox"></div>
+                <div class="activity-icon doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div class="activity-body">
+                  <div class="activity-text">Mutual action plan for Wright Lindsay Jennings — Q3 milestones</div>
+                  <div class="activity-time">9:15am · 45m</div>
+                </div>
+              </div>
+
+              <div class="activity-item" data-drill="web-1" onclick="drillIn(this, 'web-1')">
+                <div class="activity-checkbox"></div>
+                <div class="activity-icon web" style="background: #f0f9ff; color: #0ea5e9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+                <div class="activity-body">
+                  <div class="activity-text">Research on WestLaw — case precedent for Anderson deposition</div>
+                  <div class="activity-time">3:15pm · 18m</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DETAIL VIEWS (one per activity, shown on drill-in) -->
+
+          <!-- Email detail -->
+          <div class="drill-detail-view" id="drill-email-1">
+            <button class="drill-back-btn" onclick="drillOut()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              All Activities
+            </button>
+            <div class="drill-detail-content">
+              <div class="drill-detail-header">
+                <div class="drill-detail-icon email"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+                <div>
+                  <div class="drill-detail-title">Re: Firmwide Proposal — Updated Pricing & Timeline</div>
+                  <div class="drill-detail-subtitle">1:15pm · 12 min · Sent</div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Participants</div>
+                <div class="drill-participant-list">
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: var(--accent);">You</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">You</div>
+                      <div class="drill-participant-email">josh.mahoney@andersonlitigation.com</div>
+                    </div>
+                    <div class="drill-participant-role">From</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #8b5cf6;">PB</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Paul Bertram</div>
+                      <div class="drill-participant-email">p.bertram@cahillgordon.com</div>
+                    </div>
+                    <div class="drill-participant-role">To</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #3b82f6;">SC</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Sarah Chen</div>
+                      <div class="drill-participant-email">s.chen@cahillgordon.com</div>
+                    </div>
+                    <div class="drill-participant-role">To</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #22c55e;">DW</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">David Wu</div>
+                      <div class="drill-participant-email">d.wu@cahillgordon.com</div>
+                    </div>
+                    <div class="drill-participant-role">CC</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #ef4444;">RM</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Rachel Martinez</div>
+                      <div class="drill-participant-email">r.martinez@andersonlitigation.com</div>
+                    </div>
+                    <div class="drill-participant-role">CC</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Body Preview</div>
+                <div class="drill-snippet">
+                  Paul — Attached is the revised pricing schedule we discussed on the call last week. Key changes: (1) reduced onboarding fee per the volume discount we agreed on for 200+ users, (2) adjusted timeline to reflect Q3 start instead of Q2 given the board approval cycle, (3) added the supplemental training module Sarah requested for the litigation support team.
+
+                  Let me know if you need anything else before the budget committee meeting on Thursday. Happy to jump on a call if it's easier to walk through the numbers.
+
+                  Also — David mentioned you might want to loop in your procurement team early. If so, I can send them the standard vendor questionnaire pre-filled.
+
+                  Best,
+                  Josh
+                </div>
+                <span class="drill-snippet-toggle">Show full preview</span>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Attachments</div>
+                <div class="drill-attachments">
+                  <div class="drill-attachment">
+                    <div class="drill-attachment-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    CahillGordon_Pricing_v3.xlsx
+                    <span class="drill-attachment-size">42 KB</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>↑</kbd><kbd>↓</kbd> Navigate activities
+                <span style="margin-left:8px;"><kbd>Esc</kbd> Back to list</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Meeting detail -->
+          <div class="drill-detail-view" id="drill-meeting-1">
+            <button class="drill-back-btn" onclick="drillOut()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              All Activities
+            </button>
+            <div class="drill-detail-content">
+              <div class="drill-detail-header">
+                <div class="drill-detail-icon meeting"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                <div>
+                  <div class="drill-detail-title">EY Tax Group — User Selection & Onboarding Sync</div>
+                  <div class="drill-detail-subtitle">11:30am · 30 min · You were required</div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Details</div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Organizer</span>
+                  <span class="drill-detail-value">Matthew Newnes</span>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Attendees (4)</div>
+                <div class="drill-participant-list">
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #22c55e;">MN</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Matthew Newnes</div>
+                      <div class="drill-participant-email">m.newnes@ey.com</div>
+                    </div>
+                    <div class="drill-participant-role">Organizer</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: var(--accent);">You</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">You</div>
+                    </div>
+                    <div class="drill-participant-role">Required</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #f97316;">LC</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Lyndsey Cassie</div>
+                      <div class="drill-participant-email">l.cassie@ey.com</div>
+                    </div>
+                    <div class="drill-participant-role">Required</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #3b82f6;">EZ</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Eric Ziamour</div>
+                      <div class="drill-participant-email">e.ziamour@laurel.ai</div>
+                    </div>
+                    <div class="drill-participant-role">Optional</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>↑</kbd><kbd>↓</kbd> Navigate activities
+                <span style="margin-left:8px;"><kbd>Esc</kbd> Back to list</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Call detail -->
+          <div class="drill-detail-view" id="drill-call-1">
+            <button class="drill-back-btn" onclick="drillOut()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              All Activities
+            </button>
+            <div class="drill-detail-content">
+              <div class="drill-detail-header">
+                <div class="drill-detail-icon call"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+                <div>
+                  <div class="drill-detail-title">Intelligent Onboarding — Phase 2 Planning</div>
+                  <div class="drill-detail-subtitle">2:00pm · 30 min · Outbound · Answered</div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Details</div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Platform</span>
+                  <span class="drill-detail-value">Microsoft Teams</span>
+                </div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Direction</span>
+                  <span class="drill-detail-value">Outbound (you initiated)</span>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Participants (3)</div>
+                <div class="drill-participant-list">
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: var(--accent);">You</div>
+                    <div class="drill-participant-info"><div class="drill-participant-name">You</div></div>
+                    <div class="drill-participant-role">Host</div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #22c55e;">MN</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Matthew Newnes</div>
+                      <div class="drill-participant-email">m.newnes@ey.com</div>
+                    </div>
+                  </div>
+                  <div class="drill-participant">
+                    <div class="avatar" style="background: #f97316;">LC</div>
+                    <div class="drill-participant-info">
+                      <div class="drill-participant-name">Lyndsey Cassie</div>
+                      <div class="drill-participant-email">l.cassie@ey.com</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>↑</kbd><kbd>↓</kbd> Navigate activities
+                <span style="margin-left:8px;"><kbd>Esc</kbd> Back to list</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Document detail -->
+          <div class="drill-detail-view" id="drill-doc-1">
+            <button class="drill-back-btn" onclick="drillOut()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              All Activities
+            </button>
+            <div class="drill-detail-content">
+              <div class="drill-detail-header">
+                <div class="drill-detail-icon doc"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div>
+                  <div class="drill-detail-title">WLJ_Mutual_Action_Plan_Q3_2026.docx</div>
+                  <div class="drill-detail-subtitle">9:15am · 45 min</div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">File Details</div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Filename</span>
+                  <span class="drill-detail-value" style="font-weight:500;">WLJ_Mutual_Action_Plan_Q3_2026.docx</span>
+                </div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Location</span>
+                  <span class="drill-detail-value" style="font-size:11px; color:var(--text-muted); word-break:break-all;">C:\Users\jmahoney\Documents\Clients\WLJ\</span>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Content Preview</div>
+                <div class="drill-snippet">
+                  Mutual Action Plan — Wright Lindsay Jennings — Q3 2026
+
+                  1. Milestone: Complete phase 1 user rollout by July 15
+                  2. Milestone: Achieve 80% weekly adoption rate across all timekeepers by August 1
+                  3. Deliverable: Custom reporting dashboard configured and validated by July 30
+                  4. Review: Quarterly business review scheduled for September 12
+                  5. Escalation: Monthly check-in with practice group leads beginning June 1
+
+                  Key Contacts:
+                  - Client Lead: Sarah Mitchell, Director of Operations
+                  - Internal Lead: Josh Mahoney, Account Manager
+                </div>
+                <span class="drill-snippet-toggle">Show full preview</span>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>↑</kbd><kbd>↓</kbd> Navigate activities
+                <span style="margin-left:8px;"><kbd>Esc</kbd> Back to list</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Website detail -->
+          <div class="drill-detail-view" id="drill-web-1">
+            <button class="drill-back-btn" onclick="drillOut()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              All Activities
+            </button>
+            <div class="drill-detail-content">
+              <div class="drill-detail-header">
+                <div class="drill-detail-icon web" style="background: #f0f9ff; color: #0ea5e9;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+                <div>
+                  <div class="drill-detail-title">Anderson v. Pacific Holdings — Case Summary</div>
+                  <div class="drill-detail-subtitle">3:15pm · 18 min</div>
+                </div>
+              </div>
+
+              <div class="drill-section">
+                <div class="drill-section-label">Page Details</div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Tab Title</span>
+                  <span class="drill-detail-value">Anderson v. Pacific Holdings — Case Summary | WestLaw</span>
+                </div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">URL</span>
+                  <span class="drill-detail-value" style="word-break:break-all;"><a href="#" style="color:var(--blue); text-decoration:none;">https://westlaw.com/Document/I3a8e7f21...</a></span>
+                </div>
+                <div class="drill-detail-row">
+                  <span class="drill-detail-label">Application</span>
+                  <span class="drill-detail-value">WestLaw (Thomson Reuters)</span>
+                </div>
+              </div>
+
+              <div class="keyboard-hint">
+                <kbd>↑</kbd><kbd>↓</kbd> Navigate activities
+                <span style="margin-left:8px;"><kbd>Esc</kbd> Back to list</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ============================================================
+     VARIANT C: SLIDE-OVER DRAWER
+     A drawer slides over the activity panel from the right
+     ============================================================ -->
+<div class="panel" id="panel-drawer">
+<div class="notes-bar">
+  <span class="notes-label">Tradeoffs</span>
+  <span>The activity list stays visible underneath (dimmed), so users maintain spatial context of where they are in the feed. The drawer can be wider than the panel (overlaps into the timesheet area slightly), giving more room for content. Arrow keys navigate between activities without closing. The trade-off is added visual complexity — two layers to manage — and it partially obscures the timesheet.</span>
+</div>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-logo">L</div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div class="sidebar-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+    <div class="sidebar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+    <div class="sidebar-spacer"></div>
+  </aside>
+  <div class="app-main">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="header-nav"><div class="header-nav-btn">‹</div><div class="header-nav-btn">›</div></div>
+        <div class="header-date"><h2>Wednesday</h2><h1>April 8</h1></div>
+      </div>
+      <div class="header-stats">
+        <div class="stat"><span class="stat-label">Week</span><span class="stat-value">6.5</span><span class="stat-target">of 8.5</span></div>
+        <div class="stat"><span class="stat-label">Day</span><span class="stat-value">5.0</span><span class="stat-target">of 5.0</span></div>
+      </div>
+    </header>
+    <div class="app-content" style="position:relative;">
+      <div class="timesheet-area">
+        <div class="timesheet-toolbar">
+          <div class="toolbar-left"><span class="toolbar-count">5 entries</span></div>
+          <div class="toolbar-right"><div class="btn-sm">+ Create Entry</div></div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--accent);"></div>
+            <span class="matter-name">Anderson & Co. Litigation</span>
+            <span class="matter-client">Anderson Corp</span>
+            <span class="matter-total">2.3</span>
+          </div>
+          <div class="entry-row"><span class="entry-hours">0.5</span><div class="entry-body"><div class="entry-narrative">Conference regarding deposition preparation with witness panel, Avery Anderson and Lisa Griffin.</div><div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A105</span></div></div></div>
+          <div class="entry-row"><span class="entry-hours">1.0</span><div class="entry-body"><div class="entry-narrative">Draft mutual action plan document for Wright Lindsay Jennings.</div><div class="entry-meta"><span class="entry-tag tag-code">FL</span><span class="entry-tag tag-code">A106</span></div></div></div>
+        </div>
+        <div class="matter-group">
+          <div class="matter-header">
+            <div class="matter-color" style="background: var(--blue);"></div>
+            <span class="matter-name">PRES | Meetings</span>
+            <span class="matter-client">Laurel Technology</span>
+            <span class="matter-total">1.1</span>
+          </div>
+          <div class="entry-row"><span class="entry-hours">1.0</span><div class="entry-body"><div class="entry-narrative">Confer with Cahill Gordon & Reindel regarding firmwide proposal.</div><div class="entry-meta"><span class="entry-tag tag-code">A103</span><span class="entry-tag tag-status-review">Ready for Review</span></div></div></div>
+        </div>
+      </div>
+
+      <!-- Activity Panel with drawer overlay -->
+      <aside class="activity-panel" id="drawerActivityPanel" style="position:relative;">
+        <div class="activity-header">
+          <div>
+            <div class="activity-title">Work Activity</div>
+            <div class="activity-subtitle">10s · Activities · Threading</div>
+          </div>
+        </div>
+        <input class="activity-search" type="text" placeholder="Search..." disabled>
+        <div class="activity-list" id="drawerList">
+          <div class="activity-count">7 Activities</div>
+
+          <div class="activity-item" data-drawer="d-email" onclick="openDrawer(this, 'd-email')">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div class="activity-body">
+              <div class="activity-text">Correspondence regarding firmwide proposal with Cahill Gordon & Reindel</div>
+              <div class="activity-time">1:15pm · 12m</div>
+            </div>
+          </div>
+
+          <div class="activity-item" data-drawer="d-meeting" onclick="openDrawer(this, 'd-meeting')">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon meeting"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+            <div class="activity-body">
+              <div class="activity-text">User selection re: EY Tax Group — participant list and scheduling</div>
+              <div class="activity-time">11:30am · 30m</div>
+            </div>
+          </div>
+
+          <div class="activity-item" data-drawer="d-call" onclick="openDrawer(this, 'd-call')">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon call"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+            <div class="activity-body">
+              <div class="activity-text">Conference regarding intelligent onboarding with EY Tax Group via Teams</div>
+              <div class="activity-time">2:00pm · 30m</div>
+            </div>
+          </div>
+
+          <div class="activity-item" data-drawer="d-doc" onclick="openDrawer(this, 'd-doc')">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon doc"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="activity-body">
+              <div class="activity-text">Mutual action plan for Wright Lindsay Jennings — Q3 milestones</div>
+              <div class="activity-time">9:15am · 45m</div>
+            </div>
+          </div>
+
+          <div class="activity-item" data-drawer="d-web" onclick="openDrawer(this, 'd-web')">
+            <div class="activity-checkbox"></div>
+            <div class="activity-icon web" style="background: #f0f9ff; color: #0ea5e9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+            <div class="activity-body">
+              <div class="activity-text">Research on WestLaw — case precedent for Anderson deposition</div>
+              <div class="activity-time">3:15pm · 18m</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drawer overlay + panel -->
+        <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+        <div class="drawer-panel" id="drawerPanel">
+          <div class="drawer-header">
+            <div class="drawer-type-badge" id="drawerTypeBadge"></div>
+            <div style="display:flex; align-items:center; gap:4px;">
+              <div class="drawer-nav">
+                <div class="drawer-nav-btn" onclick="drawerPrev()" title="Previous">↑</div>
+                <div class="drawer-nav-btn" onclick="drawerNext()" title="Next">↓</div>
+              </div>
+              <div class="drawer-close" onclick="closeDrawer()" title="Close (Esc)">✕</div>
+            </div>
+          </div>
+          <div class="drawer-body" id="drawerBody">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+// --- Variant tab switching ---
+function switchPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  event.target.classList.add('active');
+}
+
+// --- VARIANT A: Accordion ---
+function toggleAccordion(item) {
+  const detail = item.nextElementSibling;
+  if (!detail || !detail.classList.contains('accordion-detail')) return;
+  const isOpen = detail.classList.contains('open');
+  if (isOpen) {
+    detail.classList.remove('open');
+    item.classList.remove('expanded');
+  } else {
+    detail.classList.add('open');
+    item.classList.add('expanded');
+  }
+}
+
+// --- VARIANT B: Drill-in ---
+let currentDrillId = null;
+function drillIn(el, id) {
+  const panel = el.closest('.activity-panel');
+  const listView = panel.querySelector('.drill-list-view');
+  const detailView = document.getElementById('drill-' + id);
+  if (!detailView) return;
+
+  // Deselect all, select clicked
+  panel.querySelectorAll('.activity-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Hide all detail views first
+  panel.querySelectorAll('.drill-detail-view').forEach(d => d.classList.remove('visible'));
+
+  listView.classList.add('hidden');
+  detailView.classList.add('visible');
+  currentDrillId = id;
+}
+
+function drillOut() {
+  const panel = document.getElementById('drillPanel');
+  const listView = panel.querySelector('.drill-list-view');
+  panel.querySelectorAll('.drill-detail-view').forEach(d => d.classList.remove('visible'));
+  listView.classList.remove('hidden');
+  panel.querySelectorAll('.activity-item').forEach(i => i.classList.remove('selected'));
+  currentDrillId = null;
+}
+
+// --- VARIANT C: Drawer ---
+const drawerData = {
+  'd-email': {
+    typeBadge: '<div class="drawer-type-icon" style="background:var(--purple-bg);color:var(--purple);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div> Email · Sent',
+    content: `
+      <div class="drawer-title">Re: Firmwide Proposal — Updated Pricing & Timeline</div>
+      <div class="drawer-time">1:15pm · 12 min</div>
+      <div class="drill-section">
+        <div class="drill-section-label">Participants</div>
+        <div class="drill-participant-list">
+          <div class="drill-participant"><div class="avatar" style="background:var(--accent);">You</div><div class="drill-participant-info"><div class="drill-participant-name">You</div></div><div class="drill-participant-role">From</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#8b5cf6;">PB</div><div class="drill-participant-info"><div class="drill-participant-name">Paul Bertram</div><div class="drill-participant-email">p.bertram@cahillgordon.com</div></div><div class="drill-participant-role">To</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#3b82f6;">SC</div><div class="drill-participant-info"><div class="drill-participant-name">Sarah Chen</div><div class="drill-participant-email">s.chen@cahillgordon.com</div></div><div class="drill-participant-role">To</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#22c55e;">DW</div><div class="drill-participant-info"><div class="drill-participant-name">David Wu</div></div><div class="drill-participant-role">CC</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#ef4444;">RM</div><div class="drill-participant-info"><div class="drill-participant-name">Rachel Martinez</div></div><div class="drill-participant-role">CC</div></div>
+        </div>
+      </div>
+      <div class="drill-section">
+        <div class="drill-section-label">Body Preview</div>
+        <div class="drill-snippet">Paul — Attached is the revised pricing schedule we discussed on the call last week. Key changes: (1) reduced onboarding fee per the volume discount, (2) adjusted timeline to reflect Q3 start, (3) added the supplemental training module Sarah requested. Let me know if you need anything else before Thursday.</div>
+      </div>
+      <div class="drill-section">
+        <div class="drill-section-label">Attachments</div>
+        <div class="drill-attachments">
+          <div class="drill-attachment"><div class="drill-attachment-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>CahillGordon_Pricing_v3.xlsx<span class="drill-attachment-size">42 KB</span></div>
+        </div>
+      </div>
+    `
+  },
+  'd-meeting': {
+    typeBadge: '<div class="drawer-type-icon" style="background:var(--green-bg);color:var(--green);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div> Meeting · You were required',
+    content: `
+      <div class="drawer-title">EY Tax Group — User Selection & Onboarding Sync</div>
+      <div class="drawer-time">11:30am · 30 min · Organized by Matthew Newnes</div>
+      <div class="drill-section">
+        <div class="drill-section-label">Attendees (4)</div>
+        <div class="drill-participant-list">
+          <div class="drill-participant"><div class="avatar" style="background:#22c55e;">MN</div><div class="drill-participant-info"><div class="drill-participant-name">Matthew Newnes</div><div class="drill-participant-email">m.newnes@ey.com</div></div><div class="drill-participant-role">Organizer</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:var(--accent);">You</div><div class="drill-participant-info"><div class="drill-participant-name">You</div></div><div class="drill-participant-role">Required</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#f97316;">LC</div><div class="drill-participant-info"><div class="drill-participant-name">Lyndsey Cassie</div><div class="drill-participant-email">l.cassie@ey.com</div></div><div class="drill-participant-role">Required</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#3b82f6;">EZ</div><div class="drill-participant-info"><div class="drill-participant-name">Eric Ziamour</div><div class="drill-participant-email">e.ziamour@laurel.ai</div></div><div class="drill-participant-role">Optional</div></div>
+        </div>
+      </div>
+    `
+  },
+  'd-call': {
+    typeBadge: '<div class="drawer-type-icon" style="background:var(--blue-bg);color:var(--blue);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div> Call · Outbound · Answered',
+    content: `
+      <div class="drawer-title">Intelligent Onboarding — Phase 2 Planning</div>
+      <div class="drawer-time">2:00pm · 30 min · Microsoft Teams</div>
+      <div class="drill-section">
+        <div class="drill-section-label">Participants (3)</div>
+        <div class="drill-participant-list">
+          <div class="drill-participant"><div class="avatar" style="background:var(--accent);">You</div><div class="drill-participant-info"><div class="drill-participant-name">You</div></div><div class="drill-participant-role">Host</div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#22c55e;">MN</div><div class="drill-participant-info"><div class="drill-participant-name">Matthew Newnes</div><div class="drill-participant-email">m.newnes@ey.com</div></div></div>
+          <div class="drill-participant"><div class="avatar" style="background:#f97316;">LC</div><div class="drill-participant-info"><div class="drill-participant-name">Lyndsey Cassie</div><div class="drill-participant-email">l.cassie@ey.com</div></div></div>
+        </div>
+      </div>
+    `
+  },
+  'd-doc': {
+    typeBadge: '<div class="drawer-type-icon" style="background:var(--accent-bg);color:var(--accent);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div> Document',
+    content: `
+      <div class="drawer-title">WLJ_Mutual_Action_Plan_Q3_2026.docx</div>
+      <div class="drawer-time">9:15am · 45 min</div>
+      <div class="drill-section">
+        <div class="drill-section-label">File Details</div>
+        <div class="drill-detail-row"><span class="drill-detail-label">Location</span><span class="drill-detail-value" style="font-size:11px;color:var(--text-muted);word-break:break-all;">C:\\Users\\jmahoney\\Documents\\Clients\\WLJ\\</span></div>
+      </div>
+      <div class="drill-section">
+        <div class="drill-section-label">Content Preview</div>
+        <div class="drill-snippet">Mutual Action Plan — Wright Lindsay Jennings — Q3 2026\n\n1. Milestone: Complete phase 1 user rollout by July 15\n2. Milestone: Achieve 80% weekly adoption rate by August 1\n3. Deliverable: Custom reporting dashboard configured by July 30\n4. Review: QBR scheduled for September 12</div>
+      </div>
+    `
+  },
+  'd-web': {
+    typeBadge: '<div class="drawer-type-icon" style="background:#f0f9ff;color:#0ea5e9;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div> Website',
+    content: `
+      <div class="drawer-title">Anderson v. Pacific Holdings — Case Summary</div>
+      <div class="drawer-time">3:15pm · 18 min</div>
+      <div class="drill-section">
+        <div class="drill-section-label">Page Details</div>
+        <div class="drill-detail-row"><span class="drill-detail-label">Tab Title</span><span class="drill-detail-value">Anderson v. Pacific Holdings — Case Summary | WestLaw</span></div>
+        <div class="drill-detail-row"><span class="drill-detail-label">URL</span><span class="drill-detail-value" style="word-break:break-all;"><a href="#" style="color:var(--blue);text-decoration:none;">https://westlaw.com/Document/I3a8e7f21...</a></span></div>
+        <div class="drill-detail-row"><span class="drill-detail-label">Application</span><span class="drill-detail-value">WestLaw (Thomson Reuters)</span></div>
+      </div>
+    `
+  }
+};
+
+const drawerIds = ['d-email', 'd-meeting', 'd-call', 'd-doc', 'd-web'];
+let currentDrawerId = null;
+
+function openDrawer(el, id) {
+  const data = drawerData[id];
+  if (!data) return;
+
+  // Select the row
+  document.querySelectorAll('#drawerList .activity-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // Populate drawer
+  document.getElementById('drawerTypeBadge').innerHTML = data.typeBadge;
+  document.getElementById('drawerBody').innerHTML = data.content;
+
+  // Show
+  document.getElementById('drawerOverlay').classList.add('visible');
+  document.getElementById('drawerPanel').classList.add('visible');
+  currentDrawerId = id;
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('visible');
+  document.getElementById('drawerPanel').classList.remove('visible');
+  document.querySelectorAll('#drawerList .activity-item').forEach(i => i.classList.remove('selected'));
+  currentDrawerId = null;
+}
+
+function drawerPrev() {
+  if (!currentDrawerId) return;
+  const idx = drawerIds.indexOf(currentDrawerId);
+  if (idx <= 0) return;
+  const prevId = drawerIds[idx - 1];
+  const items = document.querySelectorAll('#drawerList .activity-item');
+  openDrawer(items[idx - 1], prevId);
+}
+
+function drawerNext() {
+  if (!currentDrawerId) return;
+  const idx = drawerIds.indexOf(currentDrawerId);
+  if (idx >= drawerIds.length - 1) return;
+  const nextId = drawerIds[idx + 1];
+  const items = document.querySelectorAll('#drawerList .activity-item');
+  openDrawer(items[idx + 1], nextId);
+}
+
+// Global keyboard handler
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (currentDrillId) drillOut();
+    if (currentDrawerId) closeDrawer();
+  }
+});
+</script>
+
+</body>
+</html>
