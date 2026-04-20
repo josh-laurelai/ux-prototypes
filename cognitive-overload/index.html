@@ -142,7 +142,7 @@ input[type="range"]::-moz-range-thumb {
 /* === MOCK APP === */
 .mock-app {
   margin: 0 40px 40px;
-  background: #f0efed;
+  background: #fff;
   border-radius: 12px;
   border: 1px solid #e5e5e5;
   overflow: hidden;
@@ -248,8 +248,8 @@ input[type="range"]::-moz-range-thumb {
   background: #fff;
 }
 .group + .group {
-  border-top: none;
-  margin-top: 36px;
+  border-top: 1px solid #e5e5e5;
+  margin-top: 0;
 }
 .group-header {
   display: flex;
@@ -391,6 +391,10 @@ input[type="range"]::-moz-range-thumb {
 .state-1 .group {
   position: relative;
 }
+.state-1 .group + .group {
+  border-top: none;
+  margin-top: 36px;
+}
 .state-1 .group-strap {
   width: 3px;
   opacity: 1;
@@ -426,6 +430,10 @@ input[type="range"]::-moz-range-thumb {
    - Priority gets color
    - Strap gets thicker
    ================================================ */
+.state-2 .group + .group {
+  border-top: none;
+  margin-top: 36px;
+}
 .state-2 .group-strap {
   width: 4px;
   opacity: 1;
@@ -474,6 +482,10 @@ input[type="range"]::-moz-range-thumb {
    - Priority badges with background
    - Strap removed (header takes over)
    ================================================ */
+.state-3 .group + .group {
+  border-top: none;
+  margin-top: 36px;
+}
 .state-3 .group-strap { width: 4px; opacity: 1; }
 .state-3 .group-color-dot { display: none; }
 .state-3 .group-header { padding: 12px 24px 12px 20px; }
@@ -532,6 +544,10 @@ input[type="range"]::-moz-range-thumb {
    - Priority as full color blocks
    - Status badges with shadows
    ================================================ */
+.state-4 .group + .group {
+  border-top: none;
+  margin-top: 36px;
+}
 .state-4 .group-strap { width: 5px; opacity: 1; }
 .state-4 .group-color-dot { display: none; }
 
@@ -644,6 +660,11 @@ input[type="range"]::-moz-range-thumb {
   font-size: 14px;
   color: #713f12;
   margin-bottom: 0;
+}
+
+/* Gray bg on mock app for state 1+ so gaps show */
+.state-1.mock-app, .state-2.mock-app, .state-3.mock-app, .state-4.mock-app {
+  background: #f0efed;
 }
 
 /* Transition smoothness */
