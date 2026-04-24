@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Release Interaction Patterns — Laurel Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        colors: {
+          transparent: 'transparent',
+          white: '#FFFFFF',
+          black: '#000000',
+          gray: {
+            50:  '#FBFBFB',
+            100: '#F8F8F8',
+            200: '#EDEDEE',
+            300: '#E6E6E6',
+            400: '#CDCDCE',
+            500: '#AEAEAE',
+            600: '#7F8082',
+            700: '#4E4F52',
+            800: '#333436',
+            900: '#262629',
+          },
+          blue:   { 100:'#F1FAFF', 200:'#DAF1FF', 600:'#39B2FC', 700:'#229BE5', 800:'#0F7CBF' },
+          green:  { 100:'#EDF8E7', 200:'#CDEBC6', 400:'#76B04C', 600:'#117A00', 700:'#0E6F00' },
+          orange: { 100:'#FEF0E7', 200:'#FDD2B6', 500:'#F86A0C', 600:'#E05100' },
+          purple: { 100:'#F4F2FE', 200:'#E9E5FD', 400:'#C7BEFA', 700:'#6152B4', 800:'#3F2E9D' },
+          red:    { 100:'#fee2e2', 200:'#FBECE8', 500:'#ef4444', 600:'#dc2626' },
+          yellow: { 100:'#FFFAED', 200:'#FFF0C9', 600:'#FECC4A', 700:'#F5B30B' },
+        },
+        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        extend: {
+          boxShadow: {
+            item:  '0 4px 16px rgba(0,0,0,0.08)',
+            modal: '0px 5px 15px 0px rgba(0,0,0,0.12), 0px 15px 35px 0px rgba(60,66,87,0.08)',
+            table: '0px 2px 16px rgba(0,0,0,0.08)',
+          },
+          keyframes: {
+            circleFill: {
+              '0%': { transform: 'scale(0.95)' },
+              '50%': { transform: 'scale(1.1)' },
+              '100%': { transform: 'scale(1)' }
+            },
+            sweep: {
+              '0%': { left: '-100%' },
+              '100%': { left: '100%' }
+            },
+            collapse: {
+              '0%': { height: 'auto', opacity: '1' },
+              '100%': { height: '0px', opacity: '0' }
+            }
+          },
+          animation: {
+            circleFill: 'circleFill 0.4s ease-out',
+            sweep: 'sweep 0.3s linear',
+            collapse: 'collapse 0.3s ease-out forwards'
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Tab nav styling */
+    .tab-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background-color: #262629;
+      border-bottom: 1px solid #4E4F52;
+      padding: 0;
+      margin: 0;
+    }
+
+    .tab-button {
+      padding: 12px 24px;
+      color: #AEAEAE;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-button:hover {
+      color: #FFFFFF;
+      background-color: rgba(255,255,255,0.08);
+    }
+
+    .tab-button.active {
+      color: #FFFFFF;
+      border-bottom-color: #39B2FC;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Entry row muted state (released) */
+    .entry-released {
+      background-color: #F8F8F8;
+      color: #AEAEAE;
+    }
+
+    .entry-released .entry-text {
+      color: #7F8082;
+    }
+
+    .entry-released .entry-hours {
+      color: #7F8082;
+    }
+
+    .entry-released .entry-chip {
+      background-color: #EDEDEE;
+      color: #7F8082;
+      border-color: #EDEDEE;
+    }
+
+    /* Release checkbox circle */
+    .release-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #39B2FC;
+      background-color: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .release-circle:hover {
+      border-color: #39B2FC;
+      box-shadow: 0 0 8px rgba(57, 178, 252, 0.3);
+    }
+
+    .release-circle.filled {
+      background-color: #7F8082;
+      border-color: #7F8082;
+    }
+
+    .release-circle.filled svg {
+      width: 12px;
+      height: 12px;
+      color: white;
+      stroke-width: 3;
+    }
+
+    .release-circle.disabled {
+      border-color: #EDEDEE;
+      background-color: #F8F8F8;
+      cursor: not-allowed;
+    }
+
+    .release-circle.disabled svg {
+      color: #EDEDEE;
+    }
+
+    /* Silver sweep animation */
+    .sweep-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      pointer-events: none;
+      animation: sweep 0.3s linear;
+    }
+
+    /* Spreadsheet-style table */
+    .spreadsheet-row {
+      display: grid;
+      grid-template-columns: 6px 1fr 60px 120px;
+      align-items: center;
+      border-bottom: 1px solid #EDEDEE;
+      transition: all 0.2s ease;
+    }
+
+    .spreadsheet-row:hover {
+      background-color: #FBFBFB;
+    }
+
+    .spreadsheet-row.released {
+      background-color: #F8F8F8;
+      color: #AEAEAE;
+    }
+
+    .spreadsheet-row.released .spreadsheet-description {
+      color: #7F8082;
+    }
+
+    .spreadsheet-row.released .spreadsheet-hours {
+      color: #7F8082;
+    }
+
+    /* Release toggle circle (tab 2) */
+    .release-toggle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      background-color: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+
+    .release-toggle:not(.filled):not(.disabled) {
+      color: #39B2FC;
+      font-weight: bold;
+    }
+
+    .release-toggle:not(.filled):not(.disabled):hover {
+      background-color: #F1FAFF;
+    }
+
+    .release-toggle.filled {
+      color: #FFFFFF;
+      background-color: #7F8082;
+    }
+
+    .release-toggle.disabled {
+      color: #F86A0C;
+      cursor: not-allowed;
+    }
+
+    /* Release pill button (tab 3) */
+    .release-pill {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      background-color: #F1FAFF;
+      color: #39B2FC;
+    }
+
+    .release-pill:hover {
+      background-color: #DAF1FF;
+    }
+
+    .release-pill.disabled {
+      background-color: #FEF0E7;
+      color: #F86A0C;
+      cursor: not-allowed;
+    }
+
+    /* Collapsed summary */
+    .collapsed-summary {
+      padding: 12px 24px;
+      background-color: #F8F8F8;
+      border-top: 1px solid #EDEDEE;
+      color: #AEAEAE;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .collapsed-summary:hover {
+      background-color: #EDEDEE;
+    }
+
+    /* Matter header for tab 3 */
+    .matter-header-spreadsheet {
+      display: grid;
+      grid-template-columns: 6px 1fr 60px auto;
+      align-items: center;
+      padding: 12px 24px;
+      border-bottom: 2px solid #E6E6E6;
+      background-color: #FFFFFF;
+    }
+
+    .matter-header-spreadsheet .matter-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #262629;
+    }
+
+    .matter-header-spreadsheet .matter-meta {
+      text-align: right;
+      color: #AEAEAE;
+      font-size: 12px;
+    }
+
+    /* Smooth transitions for state changes */
+    .entry-row {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .release-circle,
+    .release-toggle,
+    .release-pill {
+      transition: all 0.2s ease;
+    }
+  </style>
+</head>
+
+<body class="bg-white font-sans text-gray-800">
+
+  <!-- Tab Navigation -->
+  <div class="tab-nav flex">
+    <button class="tab-button active" data-tab="checklist">The Checklist</button>
+    <button class="tab-button" data-tab="dual">Dual Controls</button>
+    <button class="tab-button" data-tab="spreadsheet">Spreadsheet Badge</button>
+  </div>
+
+  <!-- Page Header (shared across all tabs) -->
+  <header class="bg-white border-b border-gray-300 px-8 py-4 flex items-center gap-8 sticky top-[49px] z-10">
+    <!-- Date nav -->
+    <div class="flex items-center gap-2">
+      <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <h1 class="text-sm font-semibold text-gray-800 whitespace-nowrap w-32">Tuesday, Apr 22</h1>
+      <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <div class="flex-1"></div>
+
+    <!-- Totals + Release -->
+    <div class="flex items-center gap-8">
+      <div class="text-right">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider leading-none mb-2">Day</p>
+        <p class="text-sm font-extrabold text-gray-900">10.1h</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider leading-none mb-2">Week</p>
+        <p class="text-sm font-extrabold text-gray-900">28.4h</p>
+      </div>
+      <button class="h-10 px-4 bg-green-600 text-white text-sm font-normal rounded-lg hover:bg-green-700 flex items-center gap-2" id="releaseDay">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Release Day (4)
+      </button>
+    </div>
+  </header>
+
+  <!-- Toolbar (shared across all tabs) -->
+  <div class="bg-white px-8 py-3 flex items-center gap-4 sticky top-[133px] z-10 border-b border-gray-300">
+    <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer">
+    <span class="text-sm text-gray-500">7 entries</span>
+    <div class="flex-1"></div>
+    <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/></svg>
+    </button>
+    <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18M7 9h10M11 14h2"/></svg>
+    </button>
+    <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M6 12h12M9 18h6"/></svg>
+    </button>
+    <button class="h-9 px-3 bg-white border border-gray-300 text-gray-800 text-sm font-normal rounded-lg hover:bg-gray-50 flex items-center gap-2">
+      <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v8M8 12h8"/></svg>
+      Create Entry
+    </button>
+  </div>
+
+  <!-- Hint text for Tab 1 -->
+  <div class="tab-content active" id="checklist" style="padding: 0;">
+    <div class="px-8 py-2 text-xs text-gray-400">Shift+click to select multiple · Right-click for actions</div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="px-8 py-6 space-y-6 overflow-y-auto" style="max-height: calc(100vh - 240px);">
+
+    <!-- ═══════════════════════════════════════════════════════
+         TAB 1: THE CHECKLIST
+    ═══════════════════════════════════════════════════════ -->
+    <div class="tab-content active" id="checklist" style="padding: 0;">
+
+      <!-- Matter 1: Orange -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+            <span class="text-sm font-bold text-gray-900">Acme Corp — M&A Transaction</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>M2024-0042 · Acme Corp</span>
+            <span class="font-bold">4.7h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-gray-50 px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle ready-to-release" data-entry="0"></button>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Reviewed transaction documents and prepared summary memorandum regarding regulatory requirements.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L100-L140</span>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-gray-800 whitespace-nowrap">1.5h</span>
+        </div>
+
+        <!-- Entry: Error -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-gray-50 px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle disabled" disabled data-entry="1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </button>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Participated in due diligence call with client; drafted follow-up memo.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-dashed border-orange-500 text-orange-500 text-xs">L200-L210</span>
+            </div>
+            <p class="text-xs text-orange-500 mt-1">Missing activity code</p>
+          </div>
+          <span class="text-sm font-bold text-gray-800 whitespace-nowrap">2.7h</span>
+        </div>
+
+        <!-- Entry: Released -->
+        <div class="entry-row entry-released relative flex items-stretch px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle filled" disabled data-entry="2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </button>
+          <div class="flex-1 min-w-0">
+            <p class="entry-text text-sm">Initial review of merger agreement draft.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="entry-chip inline-flex items-center px-2 py-0.5 rounded-full border text-xs">L100-L120</span>
+            </div>
+          </div>
+          <span class="entry-hours text-sm font-bold whitespace-nowrap">0.5h</span>
+        </div>
+      </div>
+
+      <!-- Matter 2: Blue -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+            <span class="text-sm font-bold text-gray-900">TechStart Inc — Series A Financing</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>TS2025-0091 · TechStart Inc</span>
+            <span class="font-bold">2.2h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-gray-50 px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-blue-600"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle ready-to-release" data-entry="3"></button>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Drafted investor side letter and circulated to co-counsel for review.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L500-L510</span>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-gray-800 whitespace-nowrap">1.4h</span>
+        </div>
+
+        <!-- Entry: Released -->
+        <div class="entry-row entry-released relative flex items-stretch px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-blue-600"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle filled" disabled data-entry="4">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </button>
+          <div class="flex-1 min-w-0">
+            <p class="entry-text text-sm">Reviewed closing checklist and updated status of outstanding items.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="entry-chip inline-flex items-center px-2 py-0.5 rounded-full border text-xs">L600-L610</span>
+            </div>
+          </div>
+          <span class="entry-hours text-sm font-bold whitespace-nowrap">0.8h</span>
+        </div>
+      </div>
+
+      <!-- Matter 3: Purple -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-purple-800"></div>
+            <span class="text-sm font-bold text-gray-900">Greenfield Partners — Employment Dispute</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>GP2025-0015 · Greenfield Partners</span>
+            <span class="font-bold">3.2h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-gray-50 px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-purple-800"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle ready-to-release" data-entry="5"></button>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Prepared initial case assessment memorandum for partner review.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L700-L720</span>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-gray-800 whitespace-nowrap">2.0h</span>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-purple-800"></div>
+          <div class="w-[6px]"></div>
+          <button class="release-circle ready-to-release" data-entry="6"></button>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Research on recent case law regarding non-compete enforceability.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L750</span>
+            </div>
+          </div>
+          <span class="text-sm font-bold text-gray-800 whitespace-nowrap">1.2h</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TAB 2: DUAL CONTROLS
+    ═══════════════════════════════════════════════════════ -->
+    <div class="tab-content" id="dual" style="padding: 0;">
+
+      <!-- Matter 1: Orange -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+            <span class="text-sm font-bold text-gray-900">Acme Corp — M&A Transaction</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>M2024-0042 · Acme Corp</span>
+            <span class="font-bold">4.7h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-blue-50 px-4 py-3 gap-3 group cursor-pointer">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer flex-shrink-0 mt-1">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Reviewed transaction documents and prepared summary memorandum regarding regulatory requirements.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L100-L140</span>
+            </div>
+          </div>
+          <button class="release-toggle ready-to-release" data-entry="0">○</button>
+        </div>
+
+        <!-- Entry: Error -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-gray-50 px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer flex-shrink-0 mt-1">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Participated in due diligence call with client; drafted follow-up memo.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-dashed border-orange-500 text-orange-500 text-xs">L200-L210</span>
+            </div>
+          </div>
+          <div class="text-orange-500 text-xs">Fix required</div>
+        </div>
+
+        <!-- Entry: Released -->
+        <div class="entry-row entry-released relative flex items-stretch px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-orange-500"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 text-gray-400 cursor-pointer flex-shrink-0 mt-1" disabled>
+          <div class="flex-1 min-w-0">
+            <p class="entry-text text-sm">Initial review of merger agreement draft.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="entry-chip inline-flex items-center px-2 py-0.5 rounded-full border text-xs">L100-L120</span>
+            </div>
+          </div>
+          <button class="release-toggle filled" disabled>✓</button>
+        </div>
+      </div>
+
+      <!-- Matter 2: Blue -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+            <span class="text-sm font-bold text-gray-900">TechStart Inc — Series A Financing</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>TS2025-0091 · TechStart Inc</span>
+            <span class="font-bold">2.2h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-blue-50 px-4 py-3 gap-3 group cursor-pointer">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-blue-600"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer flex-shrink-0 mt-1">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Drafted investor side letter and circulated to co-counsel for review.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L500-L510</span>
+            </div>
+          </div>
+          <button class="release-toggle ready-to-release" data-entry="1">○</button>
+        </div>
+
+        <!-- Entry: Released -->
+        <div class="entry-row entry-released relative flex items-stretch px-4 py-3 gap-3 group">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-blue-600"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 text-gray-400 cursor-pointer flex-shrink-0 mt-1" disabled>
+          <div class="flex-1 min-w-0">
+            <p class="entry-text text-sm">Reviewed closing checklist and updated status of outstanding items.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="entry-chip inline-flex items-center px-2 py-0.5 rounded-full border text-xs">L600-L610</span>
+            </div>
+          </div>
+          <button class="release-toggle filled" disabled>✓</button>
+        </div>
+      </div>
+
+      <!-- Matter 3: Purple -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-300">
+          <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-purple-800"></div>
+            <span class="text-sm font-bold text-gray-900">Greenfield Partners — Employment Dispute</span>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-gray-500">
+            <span>GP2025-0015 · Greenfield Partners</span>
+            <span class="font-bold">3.2h</span>
+          </div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch border-b border-gray-300 hover:bg-blue-50 px-4 py-3 gap-3 group cursor-pointer">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-purple-800"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer flex-shrink-0 mt-1">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Prepared initial case assessment memorandum for partner review.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L700-L720</span>
+            </div>
+          </div>
+          <button class="release-toggle ready-to-release" data-entry="2">○</button>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="entry-row relative flex items-stretch px-4 py-3 gap-3 group cursor-pointer hover:bg-blue-50">
+          <div class="absolute left-0 top-0 bottom-0 w-[6px] bg-purple-800"></div>
+          <div class="w-[6px]"></div>
+          <input type="checkbox" class="h-4 w-4 rounded border-2 border-gray-400 cursor-pointer flex-shrink-0 mt-1">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-700">Research on recent case law regarding non-compete enforceability.</p>
+            <div class="mt-2 flex gap-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-gray-400 text-gray-600 text-xs">L750</span>
+            </div>
+          </div>
+          <button class="release-toggle ready-to-release" data-entry="3">○</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TAB 3: SPREADSHEET BADGE
+    ═══════════════════════════════════════════════════════ -->
+    <div class="tab-content" id="spreadsheet" style="padding: 0;">
+
+      <!-- Matter 1: Orange -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="matter-header-spreadsheet">
+          <div></div>
+          <div class="matter-name">Acme Corp — M&A Transaction</div>
+          <div class="matter-meta">4.7h</div>
+          <div class="matter-meta">2/3 released</div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="spreadsheet-row px-6 py-3" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-orange-500"></div>
+          <div class="spreadsheet-description text-sm text-gray-700">Reviewed transaction documents and prepared summary memorandum regarding regulatory requirements.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">1.5h</div>
+          <button class="release-pill ready-to-release" data-entry="0">Release</button>
+        </div>
+
+        <!-- Entry: Error -->
+        <div class="spreadsheet-row px-6 py-3" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-orange-500"></div>
+          <div>
+            <div class="spreadsheet-description text-sm text-gray-700">Participated in due diligence call with client; drafted follow-up memo.</div>
+            <div class="text-orange-500 text-xs mt-1">Missing activity code</div>
+          </div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">2.7h</div>
+          <button class="release-pill disabled" disabled>Fix required</button>
+        </div>
+
+        <!-- Entry: Released (collapsible) -->
+        <div class="spreadsheet-row px-6 py-3 released" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-orange-500"></div>
+          <div class="spreadsheet-description text-sm">Initial review of merger agreement draft.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">0.5h</div>
+          <div class="text-xs">Released ✓</div>
+        </div>
+      </div>
+
+      <!-- Matter 2: Blue -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="matter-header-spreadsheet">
+          <div></div>
+          <div class="matter-name">TechStart Inc — Series A Financing</div>
+          <div class="matter-meta">2.2h</div>
+          <div class="matter-meta">1/2 released</div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="spreadsheet-row px-6 py-3" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-blue-600"></div>
+          <div class="spreadsheet-description text-sm text-gray-700">Drafted investor side letter and circulated to co-counsel for review.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">1.4h</div>
+          <button class="release-pill ready-to-release" data-entry="1">Release</button>
+        </div>
+
+        <!-- Entry: Released (collapsible) -->
+        <div class="spreadsheet-row px-6 py-3 released" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-blue-600"></div>
+          <div class="spreadsheet-description text-sm">Reviewed closing checklist and updated status of outstanding items.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">0.8h</div>
+          <div class="text-xs">Released ✓</div>
+        </div>
+      </div>
+
+      <!-- Matter 3: Purple -->
+      <div class="bg-white rounded-xl border border-gray-300 overflow-hidden">
+        <div class="matter-header-spreadsheet">
+          <div></div>
+          <div class="matter-name">Greenfield Partners — Employment Dispute</div>
+          <div class="matter-meta">3.2h</div>
+          <div class="matter-meta">0/2 released</div>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="spreadsheet-row px-6 py-3" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-purple-800"></div>
+          <div class="spreadsheet-description text-sm text-gray-700">Prepared initial case assessment memorandum for partner review.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">2.0h</div>
+          <button class="release-pill ready-to-release" data-entry="2">Release</button>
+        </div>
+
+        <!-- Entry: Ready -->
+        <div class="spreadsheet-row px-6 py-3" style="grid-template-columns: 6px 1fr 60px 120px;">
+          <div class="bg-purple-800"></div>
+          <div class="spreadsheet-description text-sm text-gray-700">Research on recent case law regarding non-compete enforceability.</div>
+          <div class="spreadsheet-hours text-sm font-bold text-right">1.2h</div>
+          <button class="release-pill ready-to-release" data-entry="3">Release</button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    // ════════════════════════════════════════════════════════
+    // TAB SWITCHING
+    // ════════════════════════════════════════════════════════
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.dataset.tab;
+
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => {
+          tab.classList.remove('active');
+        });
+
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-button').forEach(btn => {
+          btn.classList.remove('active');
+        });
+
+        // Show selected tab
+        document.getElementById(tabName).classList.add('active');
+        button.classList.add('active');
+      });
+    });
+
+    // ════════════════════════════════════════════════════════
+    // TAB 1: CHECKLIST INTERACTIONS
+    // ════════════════════════════════════════════════════════
+    const checklistTab = document.getElementById('checklist');
+
+    checklistTab.addEventListener('click', (e) => {
+      const circle = e.target.closest('.release-circle.ready-to-release');
+      if (!circle) return;
+
+      releaseEntry(circle);
+    });
+
+    // Release Day button (cascade)
+    document.getElementById('releaseDay').addEventListener('click', () => {
+      const activeTab = document.querySelector('.tab-content.active');
+      const readyCircles = Array.from(activeTab.querySelectorAll('.release-circle.ready-to-release'));
+
+      if (readyCircles.length === 0) return;
+
+      readyCircles.forEach((circle, index) => {
+        setTimeout(() => {
+          releaseEntry(circle);
+        }, index * 150);
+      });
+    });
+
+    function releaseEntry(circle) {
+      if (circle.classList.contains('filled') || circle.classList.contains('disabled')) return;
+
+      const row = circle.closest('.entry-row');
+
+      // Animate circle fill
+      circle.style.animation = 'none';
+      setTimeout(() => {
+        circle.style.animation = 'circleFill 0.4s ease-out';
+      }, 10);
+
+      // Add sweep overlay
+      const sweep = document.createElement('div');
+      sweep.className = 'sweep-overlay';
+      row.style.position = 'relative';
+      row.appendChild(sweep);
+
+      setTimeout(() => {
+        // Update circle state
+        circle.classList.remove('ready-to-release');
+        circle.classList.add('filled');
+        circle.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+        circle.disabled = true;
+
+        // Transition row to released state
+        row.classList.add('entry-released');
+
+        // Remove sweep overlay
+        sweep.remove();
+      }, 300);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 2: DUAL CONTROLS INTERACTIONS
+    // ════════════════════════════════════════════════════════
+    const dualTab = document.getElementById('dual');
+
+    dualTab.addEventListener('click', (e) => {
+      const toggle = e.target.closest('.release-toggle.ready-to-release');
+      if (!toggle) return;
+
+      releaseEntryDual(toggle);
+    });
+
+    function releaseEntryDual(toggle) {
+      if (toggle.classList.contains('filled') || toggle.classList.contains('disabled')) return;
+
+      const row = toggle.closest('.entry-row');
+
+      // Animate circle fill
+      toggle.style.animation = 'none';
+      setTimeout(() => {
+        toggle.style.animation = 'circleFill 0.4s ease-out';
+      }, 10);
+
+      // Add sweep overlay
+      const sweep = document.createElement('div');
+      sweep.className = 'sweep-overlay';
+      row.style.position = 'relative';
+      row.appendChild(sweep);
+
+      setTimeout(() => {
+        // Update toggle state
+        toggle.classList.remove('ready-to-release');
+        toggle.classList.add('filled');
+        toggle.textContent = '✓';
+        toggle.disabled = true;
+
+        // Transition row to released state
+        row.classList.add('entry-released');
+
+        // Remove sweep overlay
+        sweep.remove();
+      }, 300);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // TAB 3: SPREADSHEET INTERACTIONS
+    // ════════════════════════════════════════════════════════
+    const spreadsheetTab = document.getElementById('spreadsheet');
+
+    spreadsheetTab.addEventListener('click', (e) => {
+      const pill = e.target.closest('.release-pill.ready-to-release');
+      if (!pill) return;
+
+      releaseEntrySpreadsheet(pill);
+    });
+
+    function releaseEntrySpreadsheet(pill) {
+      if (pill.classList.contains('disabled')) return;
+
+      const row = pill.closest('.spreadsheet-row');
+
+      // Add sweep overlay
+      const sweep = document.createElement('div');
+      sweep.className = 'sweep-overlay';
+      row.style.position = 'relative';
+      row.appendChild(sweep);
+
+      setTimeout(() => {
+        // Update pill state
+        pill.classList.remove('ready-to-release');
+        pill.classList.add('disabled');
+        pill.textContent = 'Released ✓';
+        pill.disabled = true;
+
+        // Transition row to released state
+        row.classList.add('released');
+
+        // Remove sweep overlay
+        sweep.remove();
+
+        // Collapse after 1.5 seconds
+        setTimeout(() => {
+          row.style.animation = 'collapse 0.3s ease-out forwards';
+
+          // Update parent matter header counts after collapse
+          setTimeout(() => {
+            updateMatterCounts(row);
+            row.remove();
+          }, 300);
+        }, 1500);
+      }, 300);
+    }
+
+    function updateMatterCounts(row) {
+      // This would update the matter header "X/Y released" counts
+      // For now, a simple demo - counts are hardcoded in HTML
+    }
+  </script>
+
+</body>
+</html>
