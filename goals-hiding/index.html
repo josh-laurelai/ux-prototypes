@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Goals Feature — Hide/Reveal Exploration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        colors: {
+          transparent: 'transparent',
+          white: '#FFFFFF',
+          black: '#000000',
+          gray: {
+            50:  '#FBFBFB',
+            100: '#F8F8F8',
+            200: '#EDEDEE',
+            300: '#E6E6E6',
+            400: '#CDCDCE',
+            500: '#AEAEAE',
+            600: '#7F8082',
+            700: '#4E4F52',
+            800: '#333436',
+            900: '#262629',
+          },
+          blue:   { 100:'#F1FAFF', 200:'#DAF1FF', 600:'#39B2FC', 700:'#229BE5', 800:'#0F7CBF' },
+          green:  { 100:'#EDF8E7', 200:'#CDEBC6', 400:'#76B04C', 600:'#117A00', 700:'#0E6F00' },
+          orange: { 100:'#FEF0E7', 200:'#FDD2B6', 500:'#F86A0C', 600:'#E05100' },
+          purple: { 100:'#F4F2FE', 200:'#E9E5FD', 400:'#C7BEFA', 700:'#6152B4', 800:'#3F2E9D' },
+          red:    { 100:'#fee2e2', 200:'#FBECE8', 500:'#ef4444', 600:'#dc2626' },
+          yellow: { 100:'#FFFAED', 200:'#FFF0C9', 600:'#FECC4A', 700:'#F5B30B' },
+        },
+        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        extend: {
+          boxShadow: {
+            item:  '0 4px 16px rgba(0,0,0,0.08)',
+            modal: '0px 5px 15px 0px rgba(0,0,0,0.12), 0px 15px 35px 0px rgba(60,66,87,0.08)',
+            table: '0px 2px 16px rgba(0,0,0,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .variant-tab { cursor: pointer; padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: 8px 8px 0 0; border: 1px solid #E6E6E6; border-bottom: none; background: #F8F8F8; color: #7F8082; }
+    .variant-tab.active { background: #FFFFFF; color: #262629; font-weight: 600; }
+    .variant-panel { display: none; }
+    .variant-panel.active { display: block; }
+
+    /* Popover animation */
+    .popover { opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 0.15s ease, transform 0.15s ease; }
+    .popover.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    /* Inline expand animation */
+    .goals-inline { max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.25s ease, opacity 0.2s ease, margin 0.25s ease; margin-left: 0; }
+    .goals-inline.expanded { max-width: 280px; opacity: 1; margin-left: 8px; }
+
+    /* Progress bar */
+    .progress-track { height: 4px; border-radius: 2px; background: #EDEDEE; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+<!-- Variant Tabs -->
+<div class="max-w-5xl mx-auto pt-6 px-6">
+  <h1 class="text-xl font-extrabold text-gray-900 mb-1">Goals Feature — Hide/Reveal</h1>
+  <p class="text-sm text-gray-500 mb-5">Exploring how to tuck the weekly/daily hour targets behind an icon to declutter the toolbar for the majority of users.</p>
+
+  <div class="flex gap-1 items-end">
+    <button class="variant-tab active" onclick="showVariant('current')">Current</button>
+    <button class="variant-tab" onclick="showVariant('a')">A: Inline Toggle</button>
+    <button class="variant-tab" onclick="showVariant('b')">B: Popover</button>
+    <button class="variant-tab" onclick="showVariant('c')">C: Popover + Progress</button>
+    <button class="variant-tab" onclick="showVariant('icons')">Icon Options</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CURRENT STATE
+═══════════════════════════════════════════════════════════ -->
+<div id="panel-current" class="variant-panel active">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-white rounded-b-xl rounded-tr-xl border border-gray-300 overflow-hidden">
+      <!-- Annotation -->
+      <div class="bg-yellow-100 border-b border-yellow-200 px-4 py-2">
+        <p class="text-xs text-gray-700"><strong>Current state:</strong> Week and Day goals are always visible, taking up ~200px of toolbar space. The numbers lack context — what do 13.4 and 12.2 mean? Actual vs target? Which is which? The colored dots add more mystery.</p>
+      </div>
+      <!-- Toolbar -->
+      <div class="flex items-center px-4 py-3 border-b border-gray-200 bg-white">
+        <!-- Left: date nav -->
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+          </button>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="text-sm font-semibold text-gray-900 px-1">Wed Dec 25</span>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Center: goals (current) -->
+        <div class="flex items-center gap-3 text-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Week</span>
+            <span class="font-semibold text-gray-800">13.4</span>
+            <span class="text-gray-400">12.2</span>
+          </div>
+          <span class="text-gray-300">|</span>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Day</span>
+            <span class="font-semibold text-gray-800">4.4</span>
+            <span class="text-gray-400">3.9</span>
+          </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Right: kebab + release -->
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <button class="h-9 px-4 bg-green-600 text-white text-sm font-normal rounded-lg hover:bg-green-700 flex items-center gap-1.5">
+            Release Day
+            <span class="bg-white/20 text-white text-xs font-semibold px-1.5 py-0.5 rounded">(1)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VARIANT A: INLINE TOGGLE
+═══════════════════════════════════════════════════════════ -->
+<div id="panel-a" class="variant-panel">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-white rounded-b-xl rounded-tr-xl border border-gray-300 overflow-hidden">
+      <div class="bg-blue-100 border-b border-blue-200 px-4 py-2">
+        <p class="text-xs text-gray-700"><strong>Variant A — Inline Toggle:</strong> A target icon replaces the goals numbers. Click it to expand the numbers inline. Click again to collapse. The icon has a subtle status dot so goal users can see at-a-glance if they're over/under without expanding. <em>Try clicking the icon.</em></p>
+      </div>
+      <!-- Sub-variants for icon -->
+      <div class="flex gap-1 px-4 pt-3">
+        <button class="text-xs px-2.5 py-1 rounded-full bg-gray-900 text-white font-medium" onclick="setIconA('target')">Target</button>
+        <button class="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50" onclick="setIconA('chart')">Chart</button>
+        <button class="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50" onclick="setIconA('gauge')">Gauge</button>
+      </div>
+      <!-- Toolbar -->
+      <div class="flex items-center px-4 py-3 bg-white">
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+          </button>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="text-sm font-semibold text-gray-900 px-1">Wed Dec 25</span>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Goals icon + inline expand -->
+        <div class="flex items-center">
+          <button id="toggle-a" onclick="toggleInlineGoals()" class="relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Hour goals">
+            <!-- Target icon (default) -->
+            <span id="icon-a-target" class="">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </span>
+            <!-- Chart icon -->
+            <span id="icon-a-chart" class="hidden">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+            </span>
+            <!-- Gauge icon -->
+            <span id="icon-a-gauge" class="hidden">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/><path d="M12 12l3.5-3.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+            </span>
+            <!-- Status dot (orange = over target) -->
+            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white"></span>
+          </button>
+
+          <div id="inline-goals" class="goals-inline flex items-center gap-3 text-sm whitespace-nowrap">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Week</span>
+              <span class="font-semibold text-gray-800">13.4</span>
+              <span class="text-gray-400">/ 12.2</span>
+            </div>
+            <span class="text-gray-300">|</span>
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-gray-400"></span>
+              <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Day</span>
+              <span class="font-semibold text-gray-800">4.4</span>
+              <span class="text-gray-400">/ 3.9</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <button class="h-9 px-4 bg-green-600 text-white text-sm font-normal rounded-lg hover:bg-green-700 flex items-center gap-1.5">
+            Release Day
+            <span class="bg-white/20 text-white text-xs font-semibold px-1.5 py-0.5 rounded">(1)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tradeoffs -->
+    <div class="mt-4 bg-gray-50 rounded-xl border border-gray-200 p-4">
+      <p class="text-xs font-semibold text-gray-700 mb-2">Tradeoffs</p>
+      <div class="grid grid-cols-2 gap-4 text-xs text-gray-600">
+        <div>
+          <p class="font-medium text-green-700 mb-1">Pros</p>
+          <p>Minimal disruption — same info, same location. Status dot gives ambient awareness without expanding. Toolbar stays a single row. Very fast to implement.</p>
+        </div>
+        <div>
+          <p class="font-medium text-orange-600 mb-1">Cons</p>
+          <p>Still shows the same confusing "two numbers" pattern when expanded. No room to improve the goals display (add context, progress bars, edit targets). Toolbar can feel cramped when expanded on narrow screens.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VARIANT B: POPOVER (simple)
+═══════════════════════════════════════════════════════════ -->
+<div id="panel-b" class="variant-panel">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-white rounded-b-xl rounded-tr-xl border border-gray-300">
+      <div class="bg-blue-100 border-b border-blue-200 px-4 py-2 rounded-tr-xl">
+        <p class="text-xs text-gray-700"><strong>Variant B — Popover:</strong> Icon button opens a small dropdown with labeled goal data. More room to show actual vs target clearly. <em>Click the icon to toggle.</em></p>
+      </div>
+      <div class="flex gap-1 px-4 pt-3">
+        <button class="text-xs px-2.5 py-1 rounded-full bg-gray-900 text-white font-medium" onclick="setIconB('target')">Target</button>
+        <button class="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50" onclick="setIconB('chart')">Chart</button>
+        <button class="text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50" onclick="setIconB('gauge')">Gauge</button>
+      </div>
+      <div class="flex items-center px-4 py-3 bg-white">
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+          </button>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="text-sm font-semibold text-gray-900 px-1">Wed Dec 25</span>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <!-- Goals icon + popover -->
+        <div class="relative">
+          <button id="toggle-b" onclick="togglePopoverB()" class="relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Hour goals">
+            <span id="icon-b-target">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            </span>
+            <span id="icon-b-chart" class="hidden">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+            </span>
+            <span id="icon-b-gauge" class="hidden">
+              <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/><path d="M12 12l3.5-3.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+            </span>
+            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white"></span>
+          </button>
+
+          <!-- Popover -->
+          <div id="popover-b" class="popover absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-modal border border-gray-200 p-4 z-50">
+            <p class="text-xs font-semibold text-gray-900 mb-3">Hour Goals</p>
+
+            <div class="space-y-3">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-gray-500">Weekly Target</span>
+                  <span class="text-xs text-gray-400">Goal: 12.2h</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-gray-900">13.4h</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-600 text-xs font-semibold">+1.2 over</span>
+                </div>
+              </div>
+
+              <div class="border-t border-gray-100 pt-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-medium text-gray-500">Daily Target</span>
+                  <span class="text-xs text-gray-400">Goal: 3.9h</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg font-bold text-gray-900">4.4h</span>
+                  <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-orange-100 text-orange-600 text-xs font-semibold">+0.5 over</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <button class="h-9 px-4 bg-green-600 text-white text-sm font-normal rounded-lg hover:bg-green-700 flex items-center gap-1.5">
+            Release Day
+            <span class="bg-white/20 text-white text-xs font-semibold px-1.5 py-0.5 rounded">(1)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Spacer so popover isn't clipped -->
+      <div class="h-44"></div>
+    </div>
+
+    <div class="mt-4 bg-gray-50 rounded-xl border border-gray-200 p-4">
+      <p class="text-xs font-semibold text-gray-700 mb-2">Tradeoffs</p>
+      <div class="grid grid-cols-2 gap-4 text-xs text-gray-600">
+        <div>
+          <p class="font-medium text-green-700 mb-1">Pros</p>
+          <p>Clean toolbar — icon only. Popover gives room for clear labels, delta, and "over/under" context that the current inline display lacks. Foundation for richer features (edit goals, progress bars, period selection). Familiar pattern (Slack, Linear all use icon + popover for secondary info).</p>
+        </div>
+        <div>
+          <p class="font-medium text-orange-600 mb-1">Cons</p>
+          <p>Requires a click to see numbers — slightly worse for the few power users who glance at them constantly. Popover must be positioned carefully to not overlap the Release button.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     VARIANT C: POPOVER WITH PROGRESS BARS
+═══════════════════════════════════════════════════════════ -->
+<div id="panel-c" class="variant-panel">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-white rounded-b-xl rounded-tr-xl border border-gray-300">
+      <div class="bg-blue-100 border-b border-blue-200 px-4 py-2 rounded-tr-xl">
+        <p class="text-xs text-gray-700"><strong>Variant C — Popover + Progress Bars:</strong> The richer version. Visual progress toward targets with color-coded bars. This is where hiding the feature actually <em>improves</em> it — more room means better data viz. <em>Click the icon.</em></p>
+      </div>
+      <div class="flex items-center px-4 py-3 bg-white relative">
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+          </button>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="text-sm font-semibold text-gray-900 px-1">Wed Dec 25</span>
+          <button class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="relative">
+          <button onclick="togglePopoverC()" class="relative w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Hour goals">
+            <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white"></span>
+          </button>
+
+          <div id="popover-c" class="popover open absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 bg-white rounded-xl shadow-modal border border-gray-200 p-4 z-50">
+            <div class="flex items-center justify-between mb-4">
+              <p class="text-xs font-semibold text-gray-900">Hour Goals</p>
+              <span class="text-xs text-gray-400">Week of Dec 23</span>
+            </div>
+
+            <div class="space-y-4">
+              <!-- Weekly -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-600">This Week</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-sm font-bold text-gray-900">13.4</span>
+                    <span class="text-xs text-gray-400">/ 12.2h</span>
+                  </div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill bg-orange-500" style="width: 110%"></div>
+                </div>
+                <p class="text-xs text-orange-600 font-medium mt-1">1.2h over target</p>
+              </div>
+
+              <!-- Daily -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-600">Today</span>
+                  <div class="flex items-baseline gap-1">
+                    <span class="text-sm font-bold text-gray-900">4.4</span>
+                    <span class="text-xs text-gray-400">/ 3.9h</span>
+                  </div>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill bg-orange-500" style="width: 113%"></div>
+                </div>
+                <p class="text-xs text-orange-600 font-medium mt-1">0.5h over target</p>
+              </div>
+
+              <!-- Remaining days context -->
+              <div class="border-t border-gray-100 pt-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-gray-400">2 working days left this week</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="flex items-center gap-2">
+          <button class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+          </button>
+          <button class="h-9 px-4 bg-green-600 text-white text-sm font-normal rounded-lg hover:bg-green-700 flex items-center gap-1.5">
+            Release Day
+            <span class="bg-white/20 text-white text-xs font-semibold px-1.5 py-0.5 rounded">(1)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- spacer for popover visibility -->
+      <div class="h-48"></div>
+    </div>
+
+    <div class="mt-4 bg-gray-50 rounded-xl border border-gray-200 p-4">
+      <p class="text-xs font-semibold text-gray-700 mb-2">Tradeoffs</p>
+      <div class="grid grid-cols-2 gap-4 text-xs text-gray-600">
+        <div>
+          <p class="font-medium text-green-700 mb-1">Pros</p>
+          <p>Hiding the feature actually <em>upgrades</em> it. Progress bars make targets intuitive at a glance. "Over/under" labels eliminate the "which number is which?" problem. Room for contextual info like "2 days left." Foundation for editing targets, switching periods, or linking to reports. The feature might actually get used if it's this clear.</p>
+        </div>
+        <div>
+          <p class="font-medium text-orange-600 mb-1">Cons</p>
+          <p>More design/dev work upfront. Need to handle edge cases (no goals set, start of week, targets exceeded by 200%). Popover positioning on small screens. Adds scope if the plan was "just hide it."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ICON OPTIONS COMPARISON
+═══════════════════════════════════════════════════════════ -->
+<div id="panel-icons" class="variant-panel">
+  <div class="max-w-5xl mx-auto px-6">
+    <div class="bg-white rounded-b-xl rounded-tr-xl border border-gray-300 overflow-hidden p-6">
+      <p class="text-xs font-semibold text-gray-900 mb-1">Icon Comparison</p>
+      <p class="text-xs text-gray-500 mb-6">Which icon best communicates "hour targets" to a lawyer who's seen it zero times?</p>
+
+      <div class="grid grid-cols-3 gap-6">
+        <!-- Target / Bullseye -->
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-3">
+            <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-gray-900 mb-1">Target / Bullseye</p>
+          <p class="text-xs text-gray-500">Best semantic fit — "targets" and "goals" are synonyms. Universal metaphor. Used by Notion, Asana for goals. Might read as "focus" or "record" to some users.</p>
+          <div class="mt-3 flex items-center justify-center gap-1">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-xs font-semibold">Recommended</span>
+          </div>
+        </div>
+
+        <!-- Bar Chart -->
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-3">
+            <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-gray-900 mb-1">Bar Chart</p>
+          <p class="text-xs text-gray-500">Connotes "stats" and "metrics" broadly. Very familiar. But might be confused with a reporting/analytics feature rather than personal hour targets.</p>
+        </div>
+
+        <!-- Gauge / Speedometer -->
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-3">
+            <svg class="w-8 h-8 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"/><path d="M12 12l3.5-3.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+          </div>
+          <p class="text-sm font-semibold text-gray-900 mb-1">Gauge / Speedometer</p>
+          <p class="text-xs text-gray-500">Conveys "progress" and "how far along am I." Dynamic feeling. Less common in productivity tools. Could be confused with performance/speed metrics.</p>
+        </div>
+      </div>
+
+      <!-- Additional icon options -->
+      <div class="mt-8 border-t border-gray-200 pt-6">
+        <p class="text-xs font-semibold text-gray-900 mb-4">Other candidates worth considering</p>
+        <div class="grid grid-cols-4 gap-4">
+          <div class="text-center">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-2">
+              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <p class="text-xs font-medium text-gray-700">Bolt / Zap</p>
+            <p class="text-xs text-gray-400 mt-0.5">Energy, pace</p>
+          </div>
+          <div class="text-center">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-2">
+              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <p class="text-xs font-medium text-gray-700">Pulse / Activity</p>
+            <p class="text-xs text-gray-400 mt-0.5">Tracking, health</p>
+          </div>
+          <div class="text-center">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-2">
+              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+            </div>
+            <p class="text-xs font-medium text-gray-700">Sliders / Levels</p>
+            <p class="text-xs text-gray-400 mt-0.5">Adjustable targets</p>
+          </div>
+          <div class="text-center">
+            <div class="w-12 h-12 mx-auto rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center mb-2">
+              <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <p class="text-xs font-medium text-gray-700">Checklist / Clipboard</p>
+            <p class="text-xs text-gray-400 mt-0.5">Goals as tasks</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendation -->
+      <div class="mt-6 bg-green-100 rounded-xl p-4">
+        <p class="text-xs font-semibold text-gray-900 mb-1">Recommendation: Target / Bullseye</p>
+        <p class="text-xs text-gray-700">The target icon has the strongest semantic mapping to "goals" — users in usability tests consistently associate it with targets and objectives. It's the icon Linear, Notion, and Asana use for goal-tracking features. The bar chart is a close second but risks confusion with reporting. Avoid the gauge — it's more "dashboard widget" than "personal target."</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="h-12"></div>
+
+<script>
+  // Variant tab switching
+  function showVariant(id) {
+    document.querySelectorAll('.variant-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Variant A: inline toggle
+  function toggleInlineGoals() {
+    const el = document.getElementById('inline-goals');
+    el.classList.toggle('expanded');
+  }
+
+  // Icon switching for Variant A
+  function setIconA(type) {
+    ['target','chart','gauge'].forEach(t => {
+      document.getElementById('icon-a-' + t).classList.toggle('hidden', t !== type);
+    });
+    // Update pill buttons
+    event.target.parentElement.querySelectorAll('button').forEach(b => {
+      b.className = 'text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50';
+    });
+    event.target.className = 'text-xs px-2.5 py-1 rounded-full bg-gray-900 text-white font-medium';
+  }
+
+  // Icon switching for Variant B
+  function setIconB(type) {
+    ['target','chart','gauge'].forEach(t => {
+      document.getElementById('icon-b-' + t).classList.toggle('hidden', t !== type);
+    });
+    event.target.parentElement.querySelectorAll('button').forEach(b => {
+      b.className = 'text-xs px-2.5 py-1 rounded-full bg-white border border-gray-300 text-gray-600 font-medium hover:bg-gray-50';
+    });
+    event.target.className = 'text-xs px-2.5 py-1 rounded-full bg-gray-900 text-white font-medium';
+  }
+
+  // Variant B: popover toggle
+  function togglePopoverB() {
+    document.getElementById('popover-b').classList.toggle('open');
+  }
+
+  // Variant C: popover toggle
+  function togglePopoverC() {
+    document.getElementById('popover-c').classList.toggle('open');
+  }
+
+  // Close popovers on outside click
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#toggle-b') && !e.target.closest('#popover-b')) {
+      document.getElementById('popover-b').classList.remove('open');
+    }
+    if (!e.target.closest('#popover-c') && !e.target.closest('[onclick="togglePopoverC()"]')) {
+      document.getElementById('popover-c').classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>

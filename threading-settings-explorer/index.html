@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threading Settings — Design Exploration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        colors: {
+          transparent: 'transparent',
+          white: '#FFFFFF',
+          black: '#000000',
+          gray: {
+            50:'#FBFBFB',100:'#F8F8F8',200:'#EDEDEE',300:'#E6E6E6',
+            400:'#CDCDCE',500:'#AEAEAE',600:'#7F8082',700:'#4E4F52',
+            800:'#333436',900:'#262629',
+          },
+          blue:   { 100:'#F1FAFF', 200:'#DAF1FF', 600:'#39B2FC', 700:'#229BE5', 800:'#0F7CBF' },
+          green:  { 100:'#EDF8E7', 200:'#CDEBC6', 400:'#76B04C', 600:'#117A00', 700:'#0E6F00' },
+          orange: { 100:'#FEF0E7', 200:'#FDD2B6', 500:'#F86A0C', 600:'#E05100' },
+          purple: { 100:'#F4F2FE', 200:'#E9E5FD', 400:'#C7BEFA', 700:'#6152B4', 800:'#3F2E9D' },
+          red:    { 100:'#fee2e2', 200:'#FBECE8', 500:'#ef4444', 600:'#dc2626' },
+          yellow: { 100:'#FFFAED', 200:'#FFF0C9', 600:'#FECC4A', 700:'#F5B30B' },
+        },
+        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        extend: {
+          boxShadow: {
+            item:  '0 4px 16px rgba(0,0,0,0.08)',
+            modal: '0px 5px 15px 0px rgba(0,0,0,0.12), 0px 15px 35px 0px rgba(60,66,87,0.08)',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .variant-tab { cursor: pointer; padding: 8px 16px; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; color: #7F8082; transition: all 0.15s; }
+    .variant-tab:hover { color: #333436; }
+    .variant-tab.active { color: #262629; border-bottom-color: #262629; font-weight: 600; }
+    .panel-variant { display: none; }
+    .panel-variant.active { display: block; }
+    .toggle-track { width: 36px; height: 20px; border-radius: 10px; background: #CDCDCE; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+    .toggle-track.on { background: #262629; }
+    .toggle-track .toggle-thumb { width: 16px; height: 16px; border-radius: 50%; background: white; position: absolute; top: 2px; left: 2px; transition: left 0.2s; }
+    .toggle-track.on .toggle-thumb { left: 18px; }
+    .seg-btn { padding: 6px 12px; font-size: 12px; font-weight: 500; border: 1px solid #E6E6E6; background: white; color: #7F8082; cursor: pointer; transition: all 0.15s; }
+    .seg-btn:first-child { border-radius: 6px 0 0 6px; }
+    .seg-btn:last-child { border-radius: 0 6px 6px 0; }
+    .seg-btn + .seg-btn { border-left: none; }
+    .seg-btn.active { background: #262629; color: white; border-color: #262629; }
+    .seg-btn.active + .seg-btn { border-left-color: #262629; }
+    .type-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #EDEDEE; border-radius: 8px; margin-bottom: 6px; }
+    .type-row:last-child { margin-bottom: 0; }
+    .type-row .type-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .annotation { font-size: 11px; color: #AEAEAE; margin-top: 12px; padding: 10px 12px; background: #FBFBFB; border-radius: 6px; border-left: 3px solid #E6E6E6; line-height: 1.5; }
+    .annotation strong { color: #7F8082; }
+    .popover-shell { width: 320px; background: white; border-radius: 12px; box-shadow: 0px 5px 15px 0px rgba(0,0,0,0.12), 0px 15px 35px 0px rgba(60,66,87,0.08); overflow: visible; }
+    .section-divider { height: 1px; background: #EDEDEE; margin: 12px 0; }
+    .ms-dropdown { position: relative; }
+    .ms-trigger { display: flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #4E4F52; background: white; border: 1px solid #E6E6E6; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+    .ms-trigger:hover { border-color: #CDCDCE; }
+    .ms-trigger svg { width: 10px; height: 10px; color: #7F8082; flex-shrink: 0; }
+    .ms-menu { display: none; position: absolute; top: calc(100% + 4px); right: 0; min-width: 200px; background: white; border: 1px solid #EDEDEE; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); z-index: 50; padding: 4px 0; }
+    .ms-dropdown.open .ms-menu { display: block; }
+    .ms-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; transition: background 0.1s; }
+    .ms-item:hover { background: #F8F8F8; }
+    .ms-item input[type="checkbox"] { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #CDCDCE; cursor: pointer; accent-color: #262629; }
+    .ms-item label { font-size: 12px; color: #4E4F52; cursor: pointer; flex: 1; }
+    .reveal-section { transition: all 0.2s ease; }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+  <!-- Header -->
+  <div class="max-w-5xl mx-auto px-6 pt-8 pb-4">
+    <h1 class="text-2xl font-extrabold text-gray-900 mb-1">Threading Settings — Design Exploration</h1>
+    <p class="text-sm text-gray-500 mb-6">TIME-2845 · Exploring how to organize threading on/off, per-type config, and display mode without conflicting states.</p>
+
+    <!-- Variant tabs -->
+    <div class="flex gap-0 border-b border-gray-200 mb-6">
+      <div class="variant-tab active" data-variant="current">Current (Baseline)</div>
+      <div class="variant-tab" data-variant="d">Recommended</div>
+      <div class="variant-tab" data-variant="c">Alt 1: Threads (Full Config)</div>
+      <div class="variant-tab" data-variant="c2">Alt 2: Groups (Full Config)</div>
+      <div class="variant-tab" data-variant="c3">Alt 3: Groups (Disclosure)</div>
+      <div class="variant-tab" data-variant="a">Alt 4: Inline Types</div>
+      <div class="variant-tab" data-variant="b">Alt 5: Chip Toggles</div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-6 pb-16">
+    <div class="grid grid-cols-[320px_1fr] gap-8 items-start">
+
+      <!-- ============================================ -->
+      <!-- CURRENT BASELINE -->
+      <!-- ============================================ -->
+      <div class="panel-variant active" data-variant="current">
+        <div class="popover-shell p-4">
+          <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center">
+              <span class="text-xs font-semibold text-gray-700">Activity Threading</span>
+            </div>
+            <button class="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded" title="Threading preferences">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </button>
+          </div>
+          <div class="flex mb-4">
+            <button class="seg-btn">Threaded</button>
+            <button class="seg-btn">Linked</button>
+            <button class="seg-btn active">Off</button>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">10s+</button>
+            <button class="seg-btn">30s+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn active">6m+</button>
+          </div>
+
+          <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+          <div class="flex">
+            <button class="seg-btn">NA</button>
+            <button class="seg-btn active">1m+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn">6m+</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant active" data-variant="current">
+        <div class="annotation">
+          <strong>What this is:</strong> Current production UI. Gear icon opens a separate modal for per-type settings (Documents, Emails, Teams). Three-way toggle and per-type config are in different surfaces.
+        </div>
+        <div class="annotation mt-2">
+          <strong>Problems:</strong><br>
+          • Per-type settings live behind a gear icon in a separate modal — most users won't find them<br>
+          • You can set Documents=ON in the modal but display=Off here — contradictory state<br>
+          • Gear icon suggests it configures the toggle, but it actually configures something orthogonal<br>
+          • Three-way toggle mixes two decisions: "do I want threading?" and "how should threads display?"
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT A: Inline Types -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="a">
+        <div class="popover-shell p-4">
+          <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+          <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">10s+</button>
+            <button class="seg-btn">30s+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn active">6m+</button>
+          </div>
+          <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">NA</button>
+            <button class="seg-btn active">1m+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn">6m+</button>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Master toggle -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-gray-700">Activity Threading</span>
+            <div class="toggle-track on" onclick="toggleMaster(this, 'a')"><div class="toggle-thumb"></div></div>
+          </div>
+
+          <!-- Revealed when ON -->
+          <div id="a-threading-config">
+            <!-- Display mode -->
+            <p class="text-xs font-semibold text-gray-700 mb-2">How to display threads</p>
+            <div class="flex mb-2" data-display-control="a">
+              <button class="seg-btn" onclick="setDisplay('a', this, 'linked')">Linked</button>
+              <button class="seg-btn active" onclick="setDisplay('a', this, 'collapsed')">Collapsed</button>
+            </div>
+            <p class="text-xs text-gray-400 mb-3" id="a-display-desc">Activities will be threaded at first occurrence.</p>
+
+            <!-- Per-type toggles -->
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="text-xs text-gray-500 mb-2">Thread these activity types:</p>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-gray-200">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Documents</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-blue-200">
+                  <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Emails</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row">
+                <div class="type-icon bg-purple-200">
+                  <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Teams</p>
+                </div>
+                <div class="ms-dropdown" data-id="a-teams">
+                  <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                    <span class="ms-label">All</span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <div class="ms-menu">
+                    <div class="ms-item"><input type="checkbox" checked id="a-t1" onchange="updateMsLabel(this)"><label for="a-t1">1:1 chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="a-t2" onchange="updateMsLabel(this)"><label for="a-t2">Named group chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="a-t3" onchange="updateMsLabel(this)"><label for="a-t3">Channel chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="a-t4" onchange="updateMsLabel(this)"><label for="a-t4">Meeting chats</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="a">
+        <div class="annotation">
+          <strong>Alt 4: Inline Types</strong><br>
+          Master toggle on/off. When on, per-type toggles and display mode appear inline. Everything in one surface, no hidden modals.
+        </div>
+        <div class="annotation mt-2">
+          <strong>What it solves:</strong><br>
+          • Single on/off gate — no contradictory states<br>
+          • Per-type config is always visible when threading is on<br>
+          • Display mode is a secondary choice, not mixed into the primary toggle<br>
+          • Teams sub-categories accessible via dropdown without taking extra vertical space
+        </div>
+        <div class="annotation mt-2">
+          <strong>Tradeoffs:</strong><br>
+          • Popover is tall when threading is on — three type rows + display mode + filters<br>
+          • All per-type toggles are always visible — is that overwhelming, or is it the right level of control?<br>
+          • No way to "partially thread" (e.g., thread Docs but not display threads for Emails) — is that a real need?
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle Activity Threading on/off to see the config section appear/hide. Switch between Linked and Collapsed to see the description update.
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT B: Chip Toggles -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="b">
+        <div class="popover-shell p-4">
+          <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+          <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">10s+</button>
+            <button class="seg-btn">30s+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn active">6m+</button>
+          </div>
+          <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">NA</button>
+            <button class="seg-btn active">1m+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn">6m+</button>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Master toggle -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-gray-700">Activity Threading</span>
+            <div class="toggle-track on" onclick="toggleMaster(this, 'b')"><div class="toggle-thumb"></div></div>
+          </div>
+
+          <!-- Revealed when ON -->
+          <div id="b-threading-config">
+            <!-- Display mode -->
+            <p class="text-xs font-semibold text-gray-700 mb-2">How to display threads</p>
+            <div class="flex mb-2" data-display-control="b">
+              <button class="seg-btn" onclick="setDisplay('b', this, 'linked')">Linked</button>
+              <button class="seg-btn active" onclick="setDisplay('b', this, 'collapsed')">Collapsed</button>
+            </div>
+            <p class="text-xs text-gray-400 mb-3" id="b-display-desc">Activities will be threaded at first occurrence.</p>
+
+            <!-- Per-type as chips -->
+            <div class="bg-gray-50 rounded-lg p-3">
+              <p class="text-xs text-gray-500 mb-2">Thread these types:</p>
+              <div class="flex flex-wrap gap-2 mb-2">
+                <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gray-900 text-white text-xs font-medium b-type-chip" data-active="true" onclick="toggleBChip(this)">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Documents
+                </button>
+                <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gray-900 text-white text-xs font-medium b-type-chip" data-active="true" onclick="toggleBChip(this)">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Emails
+                </button>
+              </div>
+              <div class="flex items-center gap-2">
+                <button class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gray-900 text-white text-xs font-medium b-type-chip" data-active="true" onclick="toggleBChip(this)">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                  Teams
+                </button>
+                <div class="ms-dropdown" data-id="b-teams">
+                  <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                    <span class="ms-label">All</span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <div class="ms-menu">
+                    <div class="ms-item"><input type="checkbox" checked id="b-t1" onchange="updateMsLabel(this)"><label for="b-t1">1:1 chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="b-t2" onchange="updateMsLabel(this)"><label for="b-t2">Named group chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="b-t3" onchange="updateMsLabel(this)"><label for="b-t3">Channel chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="b-t4" onchange="updateMsLabel(this)"><label for="b-t4">Meeting chats</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="b">
+        <div class="annotation">
+          <strong>Alt 5: Chip Toggles</strong><br>
+          Same master toggle, but per-type config uses compact pill chips instead of full rows. More space-efficient — the whole threading section takes less vertical room.
+        </div>
+        <div class="annotation mt-2">
+          <strong>What it solves:</strong><br>
+          • Same on/off gate as A, but more compact per-type control<br>
+          • Chips make the active/inactive state very scannable<br>
+          • Leaves room for more types without the popover becoming unwieldy
+        </div>
+        <div class="annotation mt-2">
+          <strong>Tradeoffs:</strong><br>
+          • Chips are less descriptive — no room for subtitle text like "Similar file names"<br>
+          • The Teams chip + dropdown combo is a bit unusual — is it clear that you tap the chip to toggle Teams entirely vs the dropdown to customize sub-types?<br>
+          • Dark chips might feel heavy in a settings surface
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle threading on/off. Click chips to include/exclude types. Use the Teams dropdown for sub-categories.
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT C: Two Sections -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="c">
+        <div class="popover-shell">
+          <div class="p-4 pb-3">
+            <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+            <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">10s+</button>
+              <button class="seg-btn">30s+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn active">6m+</button>
+            </div>
+            <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">NA</button>
+              <button class="seg-btn active">1m+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn">6m+</button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px bg-gray-200"></div>
+
+          <div class="p-4 pt-3">
+            <!-- Master toggle -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-700">Activity Threading</span>
+              <div class="toggle-track on" onclick="toggleMaster(this, 'c')"><div class="toggle-thumb"></div></div>
+            </div>
+
+            <!-- Revealed when ON -->
+            <div id="c-threading-config">
+              <!-- Section 1: How to display -->
+              <p class="text-xs font-semibold text-gray-600 mb-2">How to display threads</p>
+              <div class="flex mb-2" data-display-control="c">
+                <button class="seg-btn" onclick="setDisplay('c', this, 'linked')">Linked</button>
+                <button class="seg-btn active" onclick="setDisplay('c', this, 'collapsed')">Collapsed</button>
+              </div>
+              <p class="text-xs text-gray-400 mb-3" id="c-display-desc">Activities will be threaded at first occurrence.</p>
+
+              <!-- Section 2: What to thread -->
+              <p class="text-xs font-semibold text-gray-600 mb-2">What to thread</p>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-gray-200">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Documents</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-blue-200">
+                  <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Emails</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row">
+                <div class="type-icon bg-purple-200">
+                  <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Teams</p>
+                </div>
+                <div class="ms-dropdown" data-id="c-teams">
+                  <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                    <span class="ms-label">All</span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <div class="ms-menu">
+                    <div class="ms-item"><input type="checkbox" checked id="c-t1" onchange="updateMsLabel(this)"><label for="c-t1">1:1 chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c-t2" onchange="updateMsLabel(this)"><label for="c-t2">Named group chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c-t3" onchange="updateMsLabel(this)"><label for="c-t3">Channel chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c-t4" onchange="updateMsLabel(this)"><label for="c-t4">Meeting chats</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="c">
+        <div class="annotation">
+          <strong>Alt 1: Threads (Full Config)</strong><br>
+          Master toggle gates everything. When on, "What to thread" and "How to display threads" appear as two labeled sub-sections — all config always visible.
+        </div>
+        <div class="annotation mt-2">
+          <strong>What it solves:</strong><br>
+          • Makes the two orthogonal decisions explicit: what types participate, and how threads render<br>
+          • The section labels ("What to thread" / "How to display") teach the mental model<br>
+          • Master toggle eliminates contradictory states entirely
+        </div>
+        <div class="annotation mt-2">
+          <strong>Tradeoffs:</strong><br>
+          • Most structured — might feel heavy for a "just turn it on" user<br>
+          • The sub-section labels add information architecture that's only useful on first visit — after that they're just noise<br>
+          • Is the divider between "what" and "how" earning its space, or would they read fine as one continuous section?
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle threading on/off. The entire config section appears/hides. Switch Linked/Collapsed to see the description update.
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT C2: Groups terminology -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="c2">
+        <div class="popover-shell">
+          <div class="p-4 pb-3">
+            <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+            <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">10s+</button>
+              <button class="seg-btn">30s+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn active">6m+</button>
+            </div>
+            <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">NA</button>
+              <button class="seg-btn active">1m+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn">6m+</button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px bg-gray-200"></div>
+
+          <div class="p-4 pt-3">
+            <!-- Master toggle -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-700">Activity Grouping</span>
+              <div class="toggle-track on" onclick="toggleMaster(this, 'c2')"><div class="toggle-thumb"></div></div>
+            </div>
+
+            <!-- Revealed when ON -->
+            <div id="c2-threading-config">
+              <!-- Section 1: How to display -->
+              <p class="text-xs font-semibold text-gray-600 mb-2">How to display groups</p>
+              <div class="flex mb-2" data-display-control="c2">
+                <button class="seg-btn active" onclick="setDisplay('c2', this, 'threaded')">Threaded</button>
+                <button class="seg-btn" onclick="setDisplay('c2', this, 'expanded')">Expanded</button>
+              </div>
+              <p class="text-xs text-gray-400 mb-3" id="c2-display-desc">Activities will be grouped at first occurrence.</p>
+
+              <!-- Section 2: What to group -->
+              <p class="text-xs font-semibold text-gray-600 mb-2">What to group</p>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-gray-200">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Documents</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                <div class="type-icon bg-blue-200">
+                  <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Emails</p>
+                </div>
+                <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+              </div>
+              <div class="type-row">
+                <div class="type-icon bg-purple-200">
+                  <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-xs font-semibold text-gray-800">Teams</p>
+                </div>
+                <div class="ms-dropdown" data-id="c2-teams">
+                  <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                    <span class="ms-label">All</span>
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <div class="ms-menu">
+                    <div class="ms-item"><input type="checkbox" checked id="c2-t1" onchange="updateMsLabel(this)"><label for="c2-t1">1:1 chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c2-t2" onchange="updateMsLabel(this)"><label for="c2-t2">Named group chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c2-t3" onchange="updateMsLabel(this)"><label for="c2-t3">Channel chats</label></div>
+                    <div class="ms-item"><input type="checkbox" checked id="c2-t4" onchange="updateMsLabel(this)"><label for="c2-t4">Meeting chats</label></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="c2">
+        <div class="annotation">
+          <strong>Alt 2: Groups (Full Config)</strong><br>
+          Same layout as Alt 1 but uses "grouping" language instead. Threaded/Expanded instead of Linked/Collapsed.
+        </div>
+        <div class="annotation mt-2">
+          <strong>Terminology comparison:</strong><br>
+          • "Activity Grouping" vs "Activity Threading"<br>
+          • "Expanded / Collapsed" vs "Linked / Collapsed"<br>
+          • "What to group" vs "What to thread"<br>
+          • Shorter descriptions that focus on the visual outcome
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle grouping on/off. Switch Expanded/Collapsed to see the description update.
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT C3: Groups + Disclosure Link -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="c3">
+        <div class="popover-shell">
+          <div class="p-4 pb-3">
+            <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+            <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">10s+</button>
+              <button class="seg-btn">30s+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn active">6m+</button>
+            </div>
+            <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+            <div class="flex mb-4">
+              <button class="seg-btn">NA</button>
+              <button class="seg-btn active">1m+</button>
+              <button class="seg-btn">2m+</button>
+              <button class="seg-btn">6m+</button>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px bg-gray-200"></div>
+
+          <div class="p-4 pt-3">
+            <!-- Master toggle -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-gray-700">Activity Grouping</span>
+              <div class="toggle-track on" onclick="toggleMaster(this, 'c3')"><div class="toggle-thumb"></div></div>
+            </div>
+
+            <!-- Revealed when ON -->
+            <div id="c3-threading-config">
+              <!-- Display mode -->
+              <p class="text-xs font-semibold text-gray-600 mb-2">How to display groups</p>
+              <div class="flex mb-2" data-display-control="c3">
+                <button class="seg-btn active" onclick="setDisplay('c3', this, 'threaded')">Threaded</button>
+                <button class="seg-btn" onclick="setDisplay('c3', this, 'expanded')">Expanded</button>
+              </div>
+              <p class="text-xs text-gray-400 mb-3" id="c3-display-desc">Activities will be grouped at first occurrence.</p>
+
+              <!-- Customize link -->
+              <button class="text-xs text-blue-700 font-medium hover:text-blue-800 flex items-center gap-1 mb-3" onclick="document.getElementById('c3-customize').classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
+                Customize which types are grouped
+                <svg class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+
+              <div id="c3-customize" class="hidden">
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                    <div class="type-icon bg-gray-200">
+                      <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-xs font-semibold text-gray-800">Documents</p>
+                    </div>
+                    <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+                  </div>
+                  <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                    <div class="type-icon bg-blue-200">
+                      <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-xs font-semibold text-gray-800">Emails</p>
+                    </div>
+                    <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+                  </div>
+                  <div class="type-row">
+                    <div class="type-icon bg-purple-200">
+                      <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-xs font-semibold text-gray-800">Teams</p>
+                    </div>
+                    <div class="ms-dropdown" data-id="c3-teams">
+                      <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                        <span class="ms-label">All</span>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                      </button>
+                      <div class="ms-menu">
+                        <div class="ms-item"><input type="checkbox" checked id="c3-t1" onchange="updateMsLabel(this)"><label for="c3-t1">1:1 chats</label></div>
+                        <div class="ms-item"><input type="checkbox" checked id="c3-t2" onchange="updateMsLabel(this)"><label for="c3-t2">Named group chats</label></div>
+                        <div class="ms-item"><input type="checkbox" checked id="c3-t3" onchange="updateMsLabel(this)"><label for="c3-t3">Channel chats</label></div>
+                        <div class="ms-item"><input type="checkbox" checked id="c3-t4" onchange="updateMsLabel(this)"><label for="c3-t4">Meeting chats</label></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="c3">
+        <div class="annotation">
+          <strong>Alt 3: Groups (Disclosure)</strong><br>
+          Same "groups" language as Alt 2, but per-type config is hidden behind a "Customize" disclosure link instead of always visible.
+        </div>
+        <div class="annotation mt-2">
+          <strong>What it solves:</strong><br>
+          • Shortest default state — toggle + display mode is only two controls<br>
+          • "Customize which types are grouped" is accessible but doesn't overwhelm<br>
+          • Prioritizes the decision most users care about (threaded vs expanded) over the one most don't (which types)
+        </div>
+        <div class="annotation mt-2">
+          <strong>Tradeoffs:</strong><br>
+          • Per-type config is hidden — users who need it might not find it<br>
+          • If a user turns off Docs grouping, there's no visible indicator in the collapsed state<br>
+          • Compared to the full Groups variant: less upfront info, more compact, but less discoverable
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle grouping on/off. Switch Threaded/Expanded. Click "Customize" to reveal per-type toggles.
+        </div>
+      </div>
+
+      <!-- ============================================ -->
+      <!-- VARIANT D: Disclosure Link -->
+      <!-- ============================================ -->
+      <div class="panel-variant" data-variant="d">
+        <div class="popover-shell p-4">
+          <p class="text-sm font-semibold text-blue-700 mb-3">Work Activity Preferences</p>
+
+          <p class="text-xs font-semibold text-gray-700 mb-2">Duration Minimum</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">10s+</button>
+            <button class="seg-btn">30s+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn active">6m+</button>
+          </div>
+          <p class="text-xs font-semibold text-gray-700 mb-2">Open Time</p>
+          <div class="flex mb-4">
+            <button class="seg-btn">NA</button>
+            <button class="seg-btn active">1m+</button>
+            <button class="seg-btn">2m+</button>
+            <button class="seg-btn">6m+</button>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- Master toggle -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-gray-700">Activity Threading</span>
+            <div class="toggle-track on" onclick="toggleMaster(this, 'd')"><div class="toggle-thumb"></div></div>
+          </div>
+
+          <!-- Revealed when ON -->
+          <div id="d-threading-config">
+            <!-- Display mode — primary choice -->
+            <div class="flex mb-2" data-display-control="d">
+              <button class="seg-btn active" onclick="setDisplay('d', this, 'collapsed')">Collapsed</button>
+              <button class="seg-btn" onclick="setDisplay('d', this, 'linked')">Linked</button>
+            </div>
+            <p class="text-xs text-gray-400 mb-3" id="d-display-desc">Activities will be threaded at first occurrence.</p>
+
+            <!-- Customize link -->
+            <button class="text-xs text-blue-700 font-medium hover:text-blue-800 flex items-center gap-1 mb-3" onclick="document.getElementById('d-customize').classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')">
+              Customize which types are threaded
+              <svg class="w-3 h-3 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+
+            <div id="d-customize" class="hidden">
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                  <div class="type-icon bg-gray-200">
+                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-xs font-semibold text-gray-800">Documents</p>
+                  </div>
+                  <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+                </div>
+                <div class="type-row" onclick="this.querySelector('.toggle-track').classList.toggle('on')">
+                  <div class="type-icon bg-blue-200">
+                    <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-xs font-semibold text-gray-800">Emails</p>
+                  </div>
+                  <div class="toggle-track on"><div class="toggle-thumb"></div></div>
+                </div>
+                <div class="type-row">
+                  <div class="type-icon bg-purple-200">
+                    <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/></svg>
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-xs font-semibold text-gray-800">Teams</p>
+                  </div>
+                  <div class="ms-dropdown" data-id="d-teams">
+                    <button class="ms-trigger" onclick="toggleMsDropdown(this)">
+                      <span class="ms-label">All</span>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                    <div class="ms-menu">
+                      <div class="ms-item"><input type="checkbox" checked id="d-t1" onchange="updateMsLabel(this)"><label for="d-t1">1:1 chats</label></div>
+                      <div class="ms-item"><input type="checkbox" checked id="d-t2" onchange="updateMsLabel(this)"><label for="d-t2">Named group chats</label></div>
+                      <div class="ms-item"><input type="checkbox" checked id="d-t3" onchange="updateMsLabel(this)"><label for="d-t3">Channel chats</label></div>
+                      <div class="ms-item"><input type="checkbox" checked id="d-t4" onchange="updateMsLabel(this)"><label for="d-t4">Meeting chats</label></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-variant" data-variant="d">
+        <div class="annotation">
+          <strong>Recommended: Threads + Disclosure</strong><br>
+          Master toggle + display mode as the primary controls. Per-type config is hidden behind a "Customize" disclosure link — the assumption is most users want all types threaded and just need to pick Linked vs Collapsed.
+        </div>
+        <div class="annotation mt-2">
+          <strong>What it solves:</strong><br>
+          • Shortest default state — toggle + display mode is only two controls<br>
+          • Per-type config is accessible but doesn't overwhelm first-time users<br>
+          • Prioritizes the decision most users care about (linked vs collapsed) over the one most don't (which types)
+        </div>
+        <div class="annotation mt-2">
+          <strong>Tradeoffs:</strong><br>
+          • "Customize" is still a hidden layer — users who need it might not find it<br>
+          • Inverts the order from C (display first, types second) — is that the right priority?<br>
+          • If a user turns off Docs threading, they have to remember they did it — there's no visible indicator in the collapsed state
+        </div>
+        <div class="annotation mt-2">
+          <strong>Try it:</strong> Toggle threading on/off. Switch between Linked and Collapsed. Click "Customize" to reveal per-type toggles.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Multi-select dropdown
+    function toggleMsDropdown(trigger) {
+      const dd = trigger.closest('.ms-dropdown');
+      document.querySelectorAll('.ms-dropdown.open').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+      dd.classList.toggle('open');
+    }
+    function updateMsLabel(checkbox) {
+      const dd = checkbox.closest('.ms-dropdown');
+      const total = dd.querySelectorAll('input[type="checkbox"]').length;
+      const checked = dd.querySelectorAll('input[type="checkbox"]:checked').length;
+      const label = checked === 0 ? 'None' : checked === total ? 'All' : 'Custom';
+      dd.querySelector('.ms-label').textContent = label;
+    }
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.ms-dropdown')) {
+        document.querySelectorAll('.ms-dropdown.open').forEach(d => d.classList.remove('open'));
+      }
+    });
+
+    // Tab switching
+    document.querySelectorAll('.variant-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.variant-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel-variant').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const v = tab.dataset.variant;
+        document.querySelectorAll(`[data-variant="${v}"]`).forEach(p => p.classList.add('active'));
+      });
+    });
+
+    // Master toggle — controls visibility of threading config section
+    function toggleMaster(track, variant) {
+      track.classList.toggle('on');
+      const isOn = track.classList.contains('on');
+      const config = document.getElementById(variant + '-threading-config');
+      config.style.display = isOn ? 'block' : 'none';
+    }
+
+    // Display mode descriptions
+    const displayDescs = {
+      linked: 'Activities will be marked with a icon but not threaded.',
+      collapsed: 'Activities will be threaded at first occurrence.',
+      threaded: 'Activities will be grouped at first occurrence.',
+      expanded: 'Activities will be marked with a icon but not grouped.'
+    };
+
+    function setDisplay(variant, btn, mode) {
+      btn.closest('.flex').querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // c2 uses threaded/expanded (group language)
+      if (variant === 'c2') {
+        document.getElementById('c2-display-desc').textContent = displayDescs[mode];
+      } else {
+        document.getElementById(variant + '-display-desc').textContent = displayDescs[mode];
+      }
+    }
+
+    // Variant B: chip toggling
+    function toggleBChip(el) {
+      const active = el.dataset.active === 'true';
+      el.dataset.active = active ? 'false' : 'true';
+      if (active) {
+        el.classList.remove('bg-gray-900', 'text-white');
+        el.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-300');
+      } else {
+        el.classList.remove('bg-white', 'text-gray-600', 'border', 'border-gray-300');
+        el.classList.add('bg-gray-900', 'text-white');
+      }
+    }
+  </script>
+
+</body>
+</html>
